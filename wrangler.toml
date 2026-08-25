@@ -1,0 +1,12 @@
+name = "winlator-frost"
+compatibility_date = "2025-08-25"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "out"
+
+# Cloudflare Pages — winlator-frost.pages.dev (free, no card)
+# For static export (CF_PAGES=1), out/ is static homepage
+# For SSR via opennext (Workers), use main = ".open-next/worker.js" instead
+# For R2, uncomment:
+# [[r2_buckets]]
+# binding = "RELEASES_BUCKET"
+# bucket_name = "winlator-releases"

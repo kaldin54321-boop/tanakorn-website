@@ -1,0 +1,15 @@
+import { NextResponse, type NextRequest } from "next/server";
+
+// Edge-compatible proxy - no Node.js imports at top level
+// For Cloudflare Pages (opennext), Supabase SSR session refresh is skipped
+// Admin auth is still enforced in server components (app/admin/* via cookies)
+export async function proxy(request: NextRequest) {
+  return NextResponse.next({ request });
+}
+
+
+export const config = {
+  matcher: [
+    "/admin/:path*",
+  ],
+};

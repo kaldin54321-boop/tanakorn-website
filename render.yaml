@@ -1,0 +1,32 @@
+# Render — Free, No card, No 100 MB limit, Docker, 750 hrs/mo
+# Alternative to Vercel 100 MB deployment limit and Oracle credit card
+# Deploys Next.js with self-hosted file host (uploads/releases) — 5GB via Docker
+# News stays on Supabase, Releases: local host + external_url fallback (ephemeral on free)
+
+services:
+  - type: web
+    name: winlator-frost
+    # Docker runtime — no 100 MB per-file limit like Vercel, handles 5GB APKs via streaming
+    runtime: docker
+    plan: free
+    # Render auto-detects Dockerfile in root
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Render sets PORT automatically (e.g., 10000), our Dockerfile respects $PORT
+    healthCheckPath: /
+    autoDeploy: true
+    # Keep env vars for Supabase news (releases use local file host)
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://xcahjcxoacyxouvkcvcq.supabase.co
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        sync: false # Set in Render Dashboard → Environment → Add (sb_publishable_***)
+    # For 5GB persistent file host on Render (Free disk is ephemeral — uploads lost on restart)
+    # On Free, use External APK URL field for 239MB+ (already in UI) — no extra cost
+    # To make uploads persistent on Render, upgrade to Starter ($7/mo) and uncomment:
+    # disk:
+    #   name: uploads
+    #   mountPath: /app/uploads
+    #   sizeGB: 10

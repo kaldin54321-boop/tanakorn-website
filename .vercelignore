@@ -1,0 +1,20 @@
+# Vercel deployment ignore - prevents 100 MB file limit error
+# APKs are 235MB+ and should NOT be in deployment bundle
+# They are uploaded AFTER deploy via Admin UI to external URL or R2, not bundled
+
+uploads
+uploads/**
+*.apk
+*.APK
+.next
+out
+.open-next
+dist
+coverage
+.git
+.gitignore
+.env.local
+.env.example
+.DS_Store
+*.log
+npm-debug.log*

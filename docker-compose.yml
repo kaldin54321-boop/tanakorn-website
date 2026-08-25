@@ -1,0 +1,33 @@
+# Winlator@Frost - self-hosted production with persistent uploads/
+# Releases: local file host (uploads/releases) - free, 5GB, no Supabase limit
+# News: Supabase (as before)
+# Domain: winlator-frost.co.th via Cloudflare Tunnel (free, no port-forward)
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
+    volumes:
+      # Persist APKs across restarts - critical for self-hosted file host
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+
+  # Optional: Cloudflare Tunnel sidecar (free, exposes localhost:3000 to winlator-frost.co.th without public IP)
+  # 1. cloudflared tunnel create winlator-frost
+  # 2. cloudflared tunnel route dns winlator-frost winlator-frost.co.th
+  # 3. Put TUNNEL_TOKEN in .env.local
+  # tunnel:
+  #   image: cloudflare/cloudflared:latest
+  #   command: tunnel run --token ${TUNNEL_TOKEN}
+  #   depends_on:
+  #     - web
+  #   restart: unless-stopped

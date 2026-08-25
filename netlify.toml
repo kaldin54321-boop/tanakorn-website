@@ -1,0 +1,27 @@
+# Netlify Free - No card, no 100 MB deployment limit, 100GB bandwidth
+# Alternative to Vercel 100 MB limit - deploy via Git
+# For 5GB APKs, use External APK URL (Netlify Functions filesystem is ephemeral, same as Vercel)
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Next.js on Netlify via @netlify/plugin-nextjs (auto)
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Redirects for SPA fallback (Next.js handles)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = {Role = ["admin"]}
+
+# Headers for uploads (if served)
+[[headers]]
+  for = "/uploads/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"

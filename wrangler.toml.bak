@@ -1,0 +1,18 @@
+# Cloudflare — winlator-frost.pages.dev (free, no card, unlimited)
+# For Pages + R2: `npx opennextjs-cloudflare build` then `deploy`
+# News stays Supabase (as before), Releases: R2 if bound, else local /data/uploads (HF/Oracle) or external_url fallback
+
+name = "winlator-frost"
+compatibility_date = "2025-08-25"
+compatibility_flags = ["nodejs_compat"]
+
+# Uncomment when you create R2 bucket winlator-releases (Dashboard → R2 → Create, 10GB free, needs card but free tier)
+# [[r2_buckets]]
+# binding = "RELEASES_BUCKET"
+# bucket_name = "winlator-releases"
+
+[vars]
+NEXTJS_ENV = "production"
+
+# Pages will be at https://winlator-frost.pages.dev after `npx opennextjs-cloudflare deploy`
+# Or via wrangler pages: npx wrangler pages deploy .open-next/assets --project-name=winlator-frost
