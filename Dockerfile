@@ -1,6 +1,6 @@
 # Winlator@Frost - self-hosted file host (releases) + Supabase (news)
-# Keeps uploads/ persistent via volume
-FROM node:20-alpine AS base
+# Node 22+ required for @supabase/* and wrangler (see Render logs EBADENGINE)
+FROM node:22-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
