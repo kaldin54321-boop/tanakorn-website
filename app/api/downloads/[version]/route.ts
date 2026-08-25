@@ -128,6 +128,7 @@ export async function GET(
     }
 
     // Check if local file host (self-hosted, separate from Supabase)
+    // On Render Free, /app/uploads is ephemeral (lost on redeploy) - old 11.10 file was on your PC's uploads/ and not migrated
     if (isLocalPath(release.file_path)) {
       const absPath = getLocalFilePath(
         release.file_path
@@ -135,14 +136,62 @@ export async function GET(
 
       if (!fs.existsSync(absPath)) {
         console.error(
-          "Local file not found:",
-          absPath
+          "Local file not found (ephemeral Render disk, not migrated from old host):",
+          absPath,
+          "file_path:", release.file_path
         );
+
+        // Fallback: try Supabase storage if file was previously on Supabase (legacy)
+        // Try to get signed URL from Supabase as fallback for old releases before local host migration
+        try {
+          const { data: fallbackUrl, error: fallbackError } =
+            await supabase.storage
+              .from("winlator-releases")
+              .createSignedUrl(release.file_path, 60 * 10);
+          if (!fallbackError && fallbackUrl?.signedUrl) {
+            console.log("Fallback to Supabase succeeded for", release.file_path);
+            return NextResponse.redirect(fallbackUrl.signedUrl);
+          }
+        } catch (e) {
+          console.warn("Fallback Supabase also failed for", release.file_path, e);
+        }
+
+        // Also check if file exists on HF persistent /data (if migrated from HF)
+        const hfPath = path.join("/data", release.file_path);
+        if (fs.existsSync(hfPath)) {
+          console.log("Fallback to HF /data found:", hfPath);
+          // Serve from HF path
+          const stat = fs.statSync(hfPath);
+          const fileSize = stat.size;
+          const fileName = release.file_name || path.basename(hfPath);
+          const contentType = release.file_type || "application/vnd.android.package-archive";
+          const stream = fs.createReadStream(hfPath);
+          const webStream = new ReadableStream({
+            start(controller) {
+              stream.on("data", (chunk) => controller.enqueue(chunk));
+              stream.on("end", () => controller.close());
+              stream.on("error", (err) => controller.error(err));
+            },
+            cancel() { stream.destroy(); },
+          });
+          return new Response(webStream as any, {
+            headers: {
+              "Content-Length": fileSize.toString(),
+              "Content-Type": contentType,
+              "Content-Disposition": `attachment; filename="${fileName}"`,
+              "Accept-Ranges": "bytes",
+              "Cache-Control": "public, max-age=3600",
+            },
+          });
+        }
+
         return NextResponse.json(
           {
             success: false,
             message:
-              "APK file not found on server. It may have been moved or deleted.",
+              "APK file not found on server (Render Free disk is ephemeral - old uploads from your PC were not migrated to new host). Please re-upload via Admin → Releases → External APK URL (for 239MB+) or re-upload the APK on the live site. For persistent 5GB on Render, use External URL (R2, etc.) or upgrade to Render Starter with Disk.",
+            file_path: release.file_path,
+            hint: "Re-upload the 11.10 APK via https://winlator-frost.onrender.com/admin/releases - use External URL field for 235MB on Render Free",
           },
           { status: 404 }
         );
