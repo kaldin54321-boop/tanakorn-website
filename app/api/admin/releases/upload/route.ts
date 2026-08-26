@@ -15,9 +15,22 @@ export const dynamic = "force-dynamic";
 // For Vercel, use External APK URL field for 239MB+ (already in UI), or add Vercel Blob/R2
 // News stays on Supabase always
 
+function isRender(): boolean {
+  return !!process.env.RENDER || !!process.env.RENDER_SERVICE_ID;
+}
+
 function getUploadsRoot() {
+  // Render Free is ephemeral - we use Supabase (with 5GB RPC fix) for persistence there
   // HF Spaces persistent is /data, local/Oracle is /app/uploads
-  // Detect HF Spaces via SPACE_ID or HF env
+  if (isRender()) {
+    // On Render, local is ephemeral - we will try Supabase first for persistence
+    // Fallback to /tmp if needed, but primary is Supabase
+    return path.join(
+      /*turbopackIgnore: true*/ "/tmp",
+      "uploads",
+      "releases"
+    );
+  }
   const isHF =
     !!process.env.SPACE_ID ||
     !!process.env.SPACE_HOST ||
@@ -332,7 +345,7 @@ export async function POST(request: Request) {
       // body already piped, busboy will finish
     });
 
-    // Move temp file to final location: uploads/releases/{version}/{safeFileName}
+    // Move temp file to final location
     version = result.version;
     fileName = result.fileName;
     fileType = result.fileType;
@@ -343,6 +356,48 @@ export async function POST(request: Request) {
       /[^a-zA-Z0-9._-]/g,
       "_"
     );
+
+    // On Render (ephemeral), use Supabase Storage (persistent, 5GB via RPC) as primary
+    // This ensures APK lasts forever even when PC off and Render restarts
+    if (isRender()) {
+      // Try to fix bucket to 5GB via RPC (no card, SECURITY DEFINER)
+      try {
+        await supabase.rpc("fix_winlator_bucket" as any);
+      } catch {}
+      // Upload temp file to Supabase storage
+      const supabasePath = `${version}/${safeFileName}`;
+      const fileBuffer = fs.readFileSync(tempFilePath);
+      // Use service_role if available via env, else use current supabase client (may need RLS)
+      const { error: uploadError } = await supabase.storage
+        .from("winlator-releases")
+        .upload(supabasePath, fileBuffer, {
+          contentType: fileType,
+          upsert: false,
+        });
+      // Clean temp
+      try { fs.unlinkSync(tempFilePath); } catch {}
+      if (uploadError) {
+        const isSizeError = uploadError.message?.toLowerCase().includes("maximum allowed size") || uploadError.message?.toLowerCase().includes("exceeded");
+        if (isSizeError) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: `Supabase bucket still 50MB (run supabase-external-url.sql → fix_winlator_bucket() in Dashboard SQL Editor). For Render Free, use External APK URL as temporary workaround.`,
+            },
+            { status: 409 }
+          );
+        }
+        return NextResponse.json({ success: false, message: uploadError.message }, { status: 500 });
+      }
+      // Store Supabase path in DB (download route will create signed URL)
+      const dbFilePath = supabasePath;
+      return NextResponse.json({
+        success: true,
+        file: { name: fileName, path: dbFilePath, size: fileSize, type: fileType },
+        host: "supabase-persistent",
+      });
+    }
+
     const finalDir = path.join(
       /*turbopackIgnore: true*/ uploadsRoot,
       version
@@ -354,25 +409,17 @@ export async function POST(request: Request) {
     );
 
     if (fs.existsSync(/*turbopackIgnore: true*/ finalPath)) {
-      // upsert false - do not overwrite
-      try {
-        fs.unlinkSync(tempFilePath);
-      } catch {}
+      try { fs.unlinkSync(tempFilePath); } catch {}
       return NextResponse.json(
         {
           success: false,
-          message:
-            "A file already exists for this version. Delete the existing file or use a different version.",
+          message: "A file already exists for this version. Delete the existing file or use a different version.",
         },
         { status: 409 }
       );
     }
 
-    // Move temp to final
     fs.renameSync(tempFilePath, finalPath);
-
-    // Build relative path for DB (used by download route)
-    // Store as uploads/releases/{version}/{safeFileName} - relative to project root
     const dbFilePath = path
       .join("uploads", "releases", version, safeFileName)
       .replace(/\\/g, "/");
