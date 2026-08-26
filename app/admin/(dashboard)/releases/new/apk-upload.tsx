@@ -6,9 +6,6 @@ import {
   useState,
 } from "react";
 
-import * as tus from "tus-js-client";
-import { createClient } from "@/lib/supabase/client";
-
 type APKUploadProps = {
   version: string;
   onUploaded: (
@@ -102,22 +99,12 @@ export default function APKUpload({
       } catch {}
       xhrRef.current = null;
     }
-    if (tusRef.current) {
-      try {
-        tusRef.current.abort();
-      } catch {}
-      tusRef.current = null;
-    }
     setUploading(false);
     setProgress(0);
     setBytesUploaded(0);
     setError("");
     setSuccess("");
   }
-
-  // For Render/Vercel 502 on 235MB single POST, use TUS direct to Supabase for large files (bypasses gateway)
-  const isLargeFile = selectedFile ? selectedFile.size > 50 * 1024 * 1024 : false;
-  const tusRef = useRef<tus.Upload | null>(null);
 
   async function handleUpload() {
     if (!selectedFile) {
@@ -137,82 +124,8 @@ export default function APKUpload({
     setBytesUploaded(0);
     setBytesTotal(selectedFile.size);
 
-    // Large file on Render/Vercel/HF: use TUS direct to Supabase (bypasses 502 gateway, no fs.readFileSync)
-    if (isLargeFile) {
-      try {
-        // Ensure bucket is 5GB (call RPC, ignore error)
-        try {
-          await fetch("/api/admin/storage/fix-bucket", { method: "POST" });
-        } catch {}
-
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        const supabase = createClient();
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const token = session?.access_token || "";
-
-        const safeFileName = selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-        const filePath = `${version.trim()}/${safeFileName}`;
-
-        await new Promise<void>((resolve, reject) => {
-          const upload = new tus.Upload(selectedFile, {
-            endpoint: `${supabaseUrl}/storage/v1/upload/resumable`,
-            retryDelays: [0, 3000, 5000, 10000, 20000],
-            chunkSize: 6 * 1024 * 1024,
-            headers: {
-              authorization: token ? `Bearer ${token}` : "",
-              apikey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "",
-              "x-upsert": "false",
-            },
-            metadata: {
-              bucketName: "winlator-releases",
-              objectName: filePath,
-              contentType: selectedFile.type || "application/vnd.android.package-archive",
-              cacheControl: "3600",
-            },
-            onError: (err) => {
-              const msg = (err.message || "").toLowerCase();
-              if (msg.includes("maximum size exceeded") || msg.includes("413")) {
-                reject(
-                  new Error(
-                    `Supabase bucket still 50MB. Run supabase-external-url.sql → fix_winlator_bucket() in Dashboard SQL Editor, or use External APK URL field for now.`
-                  )
-                );
-              } else {
-                reject(err);
-              }
-            },
-            onProgress: (bytesUploaded, bytesTotal) => {
-              setBytesUploaded(bytesUploaded);
-              setBytesTotal(bytesTotal);
-              setProgress(bytesTotal ? Math.round((bytesUploaded / bytesTotal) * 100) : 0);
-            },
-            onSuccess: () => resolve(),
-          });
-          tusRef.current = upload;
-          upload.start();
-        });
-
-        onUploaded({
-          name: selectedFile.name,
-          path: filePath,
-          size: selectedFile.size,
-          type: selectedFile.type || "application/vnd.android.package-archive",
-        });
-        setSuccess(`APK uploaded via TUS direct to Supabase (bypasses 502 gateway) (${formatBytes(selectedFile.size)}) — persistent, PC can be off.`);
-        setProgress(100);
-        setBytesUploaded(selectedFile.size);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Upload failed.");
-      } finally {
-        setUploading(false);
-        tusRef.current = null;
-      }
-      return;
-    }
-
-    // Small file: use single POST via busboy (local or Supabase fallback)
+    // All APKs go to Filebase S3 5GB (own host, not Supabase 50MB, not PC-dependent)
+    // Server will handle S3 multipart via lib/storage-s3.ts (Storj/Filebase/R2)
     try {
       const result = await new Promise<{
         name: string;
