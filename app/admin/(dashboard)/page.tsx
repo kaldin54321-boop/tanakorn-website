@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/server";
 
+import { getAnalyticsStats } from "@/lib/analytics";
+
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
@@ -45,11 +47,12 @@ export default async function AdminDashboard() {
   const [
     { data: releases, error: releasesError },
     { data: news, error: newsError },
+    analytics,
   ] = await Promise.all([
     supabase
       .from("releases")
       .select(
-        "id, version, name, status, architecture, release_date, file_path, file_size, visibility, created_at"
+        "id, version, name, status, architecture, release_date, file_path, file_size, visibility, created_at, download_count"
       )
       .order("release_date", { ascending: false })
       .order("created_at", { ascending: false }),
@@ -60,6 +63,7 @@ export default async function AdminDashboard() {
       )
       .order("published_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false }),
+    getAnalyticsStats(),
   ]);
 
   const releaseList = releases ?? [];
@@ -431,6 +435,77 @@ export default async function AdminDashboard() {
           )}
 
         </div>
+
+      </section>
+
+      <section className="admin-panel">
+
+        <div className="admin-panel-header">
+          <div>
+            <span>ANALYTICS</span>
+            <h2>Website Statistics</h2>
+          </div>
+          <span style={{ fontSize: "11px", color: "var(--muted)" }}>{analytics.totalViews.toLocaleString()} total views</span>
+        </div>
+
+        {!analytics.exists ? (
+          <div style={{ padding: "20px", border: "1px dashed var(--border)", borderRadius: "10px", textAlign: "center", color: "var(--muted)" }}>
+            <p style={{ fontWeight: 700, color: "var(--foreground)" }}>Analytics not yet set up</p>
+            <p style={{ fontSize: "13px", marginTop: "8px" }}>Create Supabase table <code>page_views</code> to track views:</p>
+            <pre style={{ textAlign: "left", marginTop: "12px", padding: "12px", background: "rgba(255,255,255,0.04)", borderRadius: "8px", fontSize: "11px", overflowX: "auto" }}>{`create table page_views (
+  id uuid primary key default gen_random_uuid(),
+  path text not null,
+  user_agent text,
+  country text,
+  browser text,
+  os text,
+  created_at timestamptz default now()
+);
+alter table page_views enable row level security;
+create policy "allow all" on page_views for all using (true) with check (true);`}</pre>
+            <p style={{ fontSize: "12px", marginTop: "12px" }}>Also ensure <code>releases.download_count</code> column exists for download counts.</p>
+          </div>
+        ) : (
+          <div className="analytics-grid">
+            <div className="analytics-card">
+              <h3>Total Views</h3>
+              <strong>{analytics.totalViews.toLocaleString()}</strong>
+              <small>All page views</small>
+            </div>
+            <div className="analytics-card">
+              <h3>By Browser</h3>
+              {analytics.byBrowser.length === 0 ? <small>No data</small> : analytics.byBrowser.slice(0, 5).map((b) => (
+                <div key={b.name} className="analytics-row"><span>{b.name}</span><span>{b.count}</span></div>
+              ))}
+            </div>
+            <div className="analytics-card">
+              <h3>By OS</h3>
+              {analytics.byOS.length === 0 ? <small>No data</small> : analytics.byOS.slice(0, 5).map((o) => (
+                <div key={o.name} className="analytics-row"><span>{o.name}</span><span>{o.count}</span></div>
+              ))}
+            </div>
+            <div className="analytics-card">
+              <h3>Top Locations</h3>
+              {analytics.topCountries.length === 0 ? <small>No data</small> : analytics.topCountries.slice(0, 10).map((c, i) => (
+                <div key={c.name} className="analytics-row"><span>{i + 1}. {c.name}</span><span>{c.count}</span></div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {analytics.exists && analytics.topCountries.length > 0 && (
+          <div style={{ marginTop: "16px" }}>
+            <h3 style={{ fontSize: "13px", marginBottom: "8px" }}>Top 20 Countries</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "8px" }}>
+              {analytics.topCountries.slice(0, 20).map((c, i) => (
+                <div key={c.name} style={{ display: "flex", justifyContent: "space-between", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }}>
+                  <span>{i + 1}. {c.name}</span>
+                  <strong>{c.count}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
       </section>
 

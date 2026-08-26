@@ -136,13 +136,12 @@ export async function GET(
 
       if (!fs.existsSync(absPath)) {
         console.error(
-          "Local file not found (ephemeral Render disk, not migrated from old host):",
+          "Local file not found (Render ephemeral, not yet re-uploaded):",
           absPath,
           "file_path:", release.file_path
         );
 
-        // Fallback: try Supabase storage if file was previously on Supabase (legacy)
-        // Try to get signed URL from Supabase as fallback for old releases before local host migration
+        // Fallback 1: Supabase storage (legacy before local host)
         try {
           const { data: fallbackUrl, error: fallbackError } =
             await supabase.storage
@@ -156,11 +155,10 @@ export async function GET(
           console.warn("Fallback Supabase also failed for", release.file_path, e);
         }
 
-        // Also check if file exists on HF persistent /data (if migrated from HF)
+        // Fallback 2: HF persistent /data (if file was ever on HF)
         const hfPath = path.join("/data", release.file_path);
         if (fs.existsSync(hfPath)) {
           console.log("Fallback to HF /data found:", hfPath);
-          // Serve from HF path
           const stat = fs.statSync(hfPath);
           const fileSize = stat.size;
           const fileName = release.file_name || path.basename(hfPath);
@@ -183,6 +181,19 @@ export async function GET(
               "Cache-Control": "public, max-age=3600",
             },
           });
+        }
+
+        // Fallback 3: Try to proxy from HF Space live file host (if Render missing but HF has it)
+        // This keeps file host in your own infrastructure (HF 50GB persistent, no third-party)
+        const hfLiveUrl = `https://kal-tanakorn-winlator-frost.hf.space/${release.file_path}`;
+        try {
+          const headRes = await fetch(hfLiveUrl, { method: "HEAD" });
+          if (headRes.ok) {
+            console.log("Fallback to HF live URL:", hfLiveUrl);
+            return NextResponse.redirect(hfLiveUrl);
+          }
+        } catch (e) {
+          console.warn("HF live fallback failed", e);
         }
 
         return NextResponse.json(

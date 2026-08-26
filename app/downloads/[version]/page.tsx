@@ -247,11 +247,9 @@ export default async function ReleasePage({
 
           {release.description && (
 
-            <div className="release-description">
+            <div className="release-description" style={{ whiteSpace: "pre-line", wordBreak: "break-word", lineHeight: "1.7", color: "var(--muted)" }}>
 
-              <p>
-                {release.description}
-              </p>
+              {release.description}
 
             </div>
 
@@ -303,6 +301,12 @@ export default async function ReleasePage({
                   )}
                 </div>
 
+                {(release as any).download_count !== null && (release as any).download_count !== undefined && (
+                  <div className="download-count-badge">
+                    <span>⬇</span> {(release as any).download_count.toLocaleString()} downloads
+                  </div>
+                )}
+
                 {(release as any).external_url ? (
                   <a
                     href={
@@ -324,6 +328,15 @@ export default async function ReleasePage({
                     fileSize={release.file_size}
                   />
                 )}
+
+                <div className="view-release-support">
+                  <p>Support Frost — Help keep it free</p>
+                  <div className="support-buttons">
+                    <a href="https://ko-fi.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button kofi">Ko-fi</a>
+                    <a href="https://buymeacoffee.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button bmc">Buy Me a Coffee</a>
+                    <a href="https://paypal.me/MUHAMMADINISMAIL" target="_blank" rel="noopener noreferrer" className="support-button paypal">PayPal</a>
+                  </div>
+                </div>
 
               </>
             ) : (

@@ -240,9 +240,9 @@ export default async function DownloadsPage() {
 
             {latestRelease.description && (
 
-              <p className="release-description">
+              <div className="release-description" style={{ whiteSpace: "pre-line", wordBreak: "break-word", lineHeight: "1.7" }}>
                 {latestRelease.description}
-              </p>
+              </div>
 
             )}
 

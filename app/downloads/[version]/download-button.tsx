@@ -278,6 +278,8 @@ export default function DownloadButton({
     setError("");
     chunksRef.current = [];
     receivedRef.current = 0;
+    // Increment download count (fire-and-forget, separate from Supabase download)
+    fetch(`/api/downloads/${encodeURIComponent(version)}/increment`, { method: "POST" }).catch(() => {});
     startDownload(0, []);
   }
 

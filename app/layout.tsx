@@ -1,5 +1,6 @@
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ViewTracker from "./components/ViewTracker";
 import "./globals.css";
 
 export default function RootLayout({
@@ -11,6 +12,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Navbar />
+        <ViewTracker />
         {children}
         <Footer />
       </body>
