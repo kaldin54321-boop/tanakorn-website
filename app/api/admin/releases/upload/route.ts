@@ -6,13 +6,19 @@ import fs from "fs";
 import path from "path";
 import Busboy from "busboy";
 
+import {
+  isS3Configured,
+  uploadToS3,
+} from "@/lib/storage-s3";
+
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
-// File host: local (HF/Oracle/VPS) at /data or ./uploads - 5GB, Range support
-// Vercel: filesystem is ephemeral (uploads lost on redeploy) + Hobby 10s/60s timeout
-// For Vercel, use External APK URL field for 239MB+ (already in UI), or add Vercel Blob/R2
+// File host priority (free, no card, persistent, 5GB, own host, not MediaFire/Drive/Mega):
+// 1. S3-compatible (Storj 25GB free no card / Filebase 5GB free no card / R2 10GB) - configured via S3_* env - persistent, separate from Supabase news
+// 2. Local /data (HF 50GB) or ./uploads (Oracle/VPS) - persistent if volume, ephemeral on Render Free/Vercel
+// 3. External URL fallback (user pastes direct link) - always works
 // News stays on Supabase always
 
 function isRender(): boolean {
@@ -357,47 +363,45 @@ export async function POST(request: Request) {
       "_"
     );
 
-    // On Render (ephemeral) use Supabase (persistent) - but for 235MB single POST would hit 502 gateway, so client now uses TUS direct to Supabase for >50MB
-    // This branch is fallback for small files on Render that still go through server
-    if (isRender()) {
-      try {
-        await supabase.rpc("fix_winlator_bucket" as any);
-      } catch {}
-      const supabasePath = `${version}/${safeFileName}`;
-      // Stream file to Supabase to avoid loading 235MB into memory (fixes 502 + OOM)
-      const fileStream = fs.createReadStream(tempFilePath);
-      const { error: uploadError } = await (supabase.storage.from("winlator-releases") as any).upload(
-        supabasePath,
-        fileStream as any,
-        {
-          contentType: fileType,
-          upsert: false,
-          duplex: "half",
-        }
-      );
-      // Clean temp
+    // Priority 1: S3-compatible own host (Storj 25GB free no card / Filebase 5GB free no card / R2 10GB) - persistent, not PC-dependent, not Supabase 50MB
+    // Configured via S3_* env (S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY)
+    // This is your own bucket, not MediaFire/Drive/Mega, separate from Supabase news
+    if (isS3Configured()) {
+      const s3Key = `${version}/${safeFileName}`;
+      // Stream temp file to S3 via multipart (5GB) - turbopackIgnore for dynamic path
+      const fileStream = fs.createReadStream(/*turbopackIgnore: true*/ tempFilePath);
+      const s3Result = await uploadToS3(s3Key, fileStream as any, fileType);
       try { fs.unlinkSync(tempFilePath); } catch {}
-      if (uploadError) {
-        const isSizeError = uploadError.message?.toLowerCase().includes("maximum allowed size") || uploadError.message?.toLowerCase().includes("exceeded");
-        if (isSizeError) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: `Supabase bucket still 50MB (run supabase-external-url.sql → fix_winlator_bucket() in Dashboard SQL Editor). For Render Free, use External APK URL as temporary workaround.`,
-            },
-            { status: 409 }
-          );
-        }
-        return NextResponse.json({ success: false, message: uploadError.message }, { status: 500 });
+      if (!s3Result.success) {
+        return NextResponse.json({ success: false, message: `S3 upload failed: ${s3Result.error}. Check S3_* env (endpoint, bucket, keys) and bucket CORS.` }, { status: 500 });
       }
-      // Store Supabase path in DB (download route will create signed URL)
-      const dbFilePath = supabasePath;
+      // Store S3 key as file_path with s3:// prefix to distinguish from local/uploads and Supabase
+      const dbFilePath = `s3://${s3Key}`;
       return NextResponse.json({
         success: true,
         file: { name: fileName, path: dbFilePath, size: fileSize, type: fileType },
-        host: "supabase-persistent",
+        host: "s3-persistent-own-host",
       });
     }
+
+    // On Render (ephemeral) - local would be lost when PC off, so do NOT use Supabase 50MB bucket for APKs
+    // Supabase stays only for news/dashboard/videos, APKs go to S3 own host or local persistent
+    // For Render Free without S3 env, fallback to local /tmp (still ephemeral, but better than Supabase 50MB error)
+    // User can set S3_* env for persistent 5GB (Storj/Filebase free) - then isS3Configured() above would have handled it
+    if (isRender() && !isS3Configured()) {
+      // Fallback to local ephemeral on Render - will be lost on restart, but at least not Supabase 50MB error
+      // Advise user to set S3_* env for persistent
+      console.warn("Render without S3 - using ephemeral /tmp, APK will be lost on restart. Set S3_* env for persistent 5GB.");
+    }
+    if (isRender() && isS3Configured()) {
+      // This case already handled above by S3, so this is fallback for Render with S3 not configured but we still try Supabase?
+      // Actually for Render without S3, we should NOT try Supabase 50MB, we should use local ephemeral and warn
+      // So skip Supabase for APKs on Render
+      null;
+    }
+    // Supabase NOT used for APKs per user request - only for news/videos/dashboard
+    // APKs go to S3 own host (if configured) or local /data or ./uploads (HF persistent, Render ephemeral)
+    // For Render Free without S3, local is ephemeral - user should set S3_* env for persistent 5GB (Storj/Filebase free)
 
     const finalDir = path.join(
       /*turbopackIgnore: true*/ uploadsRoot,

@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import fs from "fs";
 import path from "path";
 
+import { getS3SignedUrl } from "@/lib/storage-s3";
+
 type RouteContext = {
   params: Promise<{
     version: string;
@@ -110,11 +112,9 @@ export async function GET(
       );
     }
 
-    // External URL takes precedence
+    // External URL takes precedence (for 239MB+ on Render Free ephemeral)
     if (release.external_url) {
-      return NextResponse.redirect(
-        release.external_url
-      );
+      return NextResponse.redirect(release.external_url);
     }
 
     if (!release.file_path) {
@@ -124,6 +124,20 @@ export async function GET(
           message: "APK file is not available for this release.",
         },
         { status: 404 }
+      );
+    }
+
+    // S3-compatible own host (Storj/Filebase/R2) - persistent, 5GB, not PC-dependent, not Supabase 50MB
+    // file_path like s3://11.10/app.apk
+    if (release.file_path.startsWith("s3://")) {
+      const s3Key = release.file_path.slice(5);
+      const signedUrl = await getS3SignedUrl(s3Key, 600);
+      if (signedUrl) {
+        return NextResponse.redirect(signedUrl);
+      }
+      return NextResponse.json(
+        { success: false, message: "Unable to prepare S3 download URL. Check S3_* env." },
+        { status: 500 }
       );
     }
 

@@ -22,16 +22,20 @@ function getS3Config(): S3Config | null {
   const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
   const region = process.env.S3_REGION || process.env.AWS_REGION || "auto";
 
-  if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) return null;
+  if (endpoint && bucket && accessKeyId && secretAccessKey) {
+    return {
+      endpoint,
+      region,
+      bucket,
+      accessKeyId,
+      secretAccessKey,
+      forcePathStyle: endpoint.includes("storj") || endpoint.includes("filebase") ? true : undefined,
+    };
+  }
 
-  return {
-    endpoint,
-    region,
-    bucket,
-    accessKeyId,
-    secretAccessKey,
-    forcePathStyle: endpoint.includes("storj") || endpoint.includes("filebase") ? true : undefined,
-  };
+  // No S3 env - upload will use local (HF /data persistent, Render /tmp ephemeral)
+  // For Render persistent 5GB without PC, set S3_* to Storj/Filebase free bucket
+  return null;
 }
 
 function createS3Client(config: S3Config): S3Client {
