@@ -150,26 +150,16 @@ export async function GET(
 
       if (!fs.existsSync(absPath)) {
         console.error(
-          "Local file not found (Render ephemeral, not yet re-uploaded):",
+          "Local file not found (Render ephemeral or not yet uploaded to Filebase):",
           absPath,
           "file_path:", release.file_path
         );
 
-        // Fallback 1: Supabase storage (legacy before local host)
-        try {
-          const { data: fallbackUrl, error: fallbackError } =
-            await supabase.storage
-              .from("winlator-releases")
-              .createSignedUrl(release.file_path, 60 * 10);
-          if (!fallbackError && fallbackUrl?.signedUrl) {
-            console.log("Fallback to Supabase succeeded for", release.file_path);
-            return NextResponse.redirect(fallbackUrl.signedUrl);
-          }
-        } catch (e) {
-          console.warn("Fallback Supabase also failed for", release.file_path, e);
-        }
+        // For Filebase/S3 host, file_path is s3:// - already handled above, this is only for uploads/ local path
+        // Try Supabase legacy only if file_path looks like Supabase path (no uploads/ prefix) - but per user request, APKs should NOT use Supabase bucket
+        // So do NOT fallback to Supabase for APKs - only for legacy if needed, otherwise 404 with Filebase hint
 
-        // Fallback 2: HF persistent /data (if file was ever on HF)
+        // Fallback: HF persistent /data (if file was ever on HF)
         const hfPath = path.join("/data", release.file_path);
         if (fs.existsSync(hfPath)) {
           console.log("Fallback to HF /data found:", hfPath);
@@ -197,26 +187,13 @@ export async function GET(
           });
         }
 
-        // Fallback 3: Try to proxy from HF Space live file host (if Render missing but HF has it)
-        // This keeps file host in your own infrastructure (HF 50GB persistent, no third-party)
-        const hfLiveUrl = `https://kal-tanakorn-winlator-frost.hf.space/${release.file_path}`;
-        try {
-          const headRes = await fetch(hfLiveUrl, { method: "HEAD" });
-          if (headRes.ok) {
-            console.log("Fallback to HF live URL:", hfLiveUrl);
-            return NextResponse.redirect(hfLiveUrl);
-          }
-        } catch (e) {
-          console.warn("HF live fallback failed", e);
-        }
-
         return NextResponse.json(
           {
             success: false,
             message:
-              "APK file not found on server (Render Free disk is ephemeral - old uploads from your PC were not migrated to new host). Please re-upload via Admin → Releases → External APK URL (for 239MB+) or re-upload the APK on the live site. For persistent 5GB on Render, use External URL (R2, etc.) or upgrade to Render Starter with Disk.",
+              "APK file not found. File was on previous local host (PC uploads/ lost on Render redeploy). Re-upload via Admin → Releases on https://winlator-frost.onrender.com - now goes to Filebase S3 5GB (persistent, not Supabase 50MB, not PC-dependent). For 239MB+, ensure Filebase env is set on Render.",
             file_path: release.file_path,
-            hint: "Re-upload the 11.10 APK via https://winlator-frost.onrender.com/admin/releases - use External URL field for 235MB on Render Free",
+            hint: "Set Filebase S3 env on Render: S3_ENDPOINT=https://s3.filebase.com, S3_BUCKET=winlator-releases, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, then re-upload APK. Or use External APK URL field.",
           },
           { status: 404 }
         );
@@ -306,40 +283,16 @@ export async function GET(
       });
     }
 
-    // Fallback: Supabase storage (legacy, for news still uses Supabase)
-    const {
-      data: signedUrlData,
-      error: signedUrlError,
-    } = await supabase.storage
-      .from("winlator-releases")
-      .createSignedUrl(release.file_path, 60 * 10);
-
-    if (signedUrlError) {
-      console.error(
-        "Failed to create APK signed URL:",
-        signedUrlError
-      );
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Unable to prepare the APK download.",
-        },
-        { status: 500 }
-      );
-    }
-
-    if (!signedUrlData?.signedUrl) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Unable to generate the APK download URL.",
-        },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.redirect(
-      signedUrlData.signedUrl
+    // No local and no S3 and no external_url - file not found
+    // Do NOT fallback to Supabase for APKs per user request (Supabase 50MB limit, kept only for news)
+    // This is likely a legacy Supabase path like "11.10/file.apk" from before Filebase migration
+    // User should re-upload to Filebase via Admin
+    return NextResponse.json(
+      {
+        success: false,
+        message: `APK file not found: ${release.file_path}. Supabase bucket is no longer used for APKs (50MB limit). Re-upload via Admin → Releases → Filebase S3 5GB (persistent). Ensure Render env has S3_* for Filebase bucket winlator-releases (https://s3.filebase.com).`,
+      },
+      { status: 404 }
     );
   } catch (error) {
     console.error(

@@ -384,24 +384,10 @@ export async function POST(request: Request) {
       });
     }
 
-    // On Render (ephemeral) - local would be lost when PC off, so do NOT use Supabase 50MB bucket for APKs
-    // Supabase stays only for news/dashboard/videos, APKs go to S3 own host or local persistent
-    // For Render Free without S3 env, fallback to local /tmp (still ephemeral, but better than Supabase 50MB error)
-    // User can set S3_* env for persistent 5GB (Storj/Filebase free) - then isS3Configured() above would have handled it
-    if (isRender() && !isS3Configured()) {
-      // Fallback to local ephemeral on Render - will be lost on restart, but at least not Supabase 50MB error
-      // Advise user to set S3_* env for persistent
-      console.warn("Render without S3 - using ephemeral /tmp, APK will be lost on restart. Set S3_* env for persistent 5GB.");
-    }
-    if (isRender() && isS3Configured()) {
-      // This case already handled above by S3, so this is fallback for Render with S3 not configured but we still try Supabase?
-      // Actually for Render without S3, we should NOT try Supabase 50MB, we should use local ephemeral and warn
-      // So skip Supabase for APKs on Render
-      null;
-    }
-    // Supabase NOT used for APKs per user request - only for news/videos/dashboard
-    // APKs go to S3 own host (if configured) or local /data or ./uploads (HF persistent, Render ephemeral)
-    // For Render Free without S3, local is ephemeral - user should set S3_* env for persistent 5GB (Storj/Filebase free)
+    // Supabase is NEVER used for APKs - per user request: APKs must go to Filebase/S3 own host or local, not Supabase 50MB
+    // Supabase remains only for news/dashboard/videos table data, not for APK bucket
+    // If S3 not configured (isS3Configured() == false), fallback to local file host below
+    // For Render Free, local is ephemeral (/tmp) - user MUST set Filebase S3 env for persistent 5GB (see .env.example)
 
     const finalDir = path.join(
       /*turbopackIgnore: true*/ uploadsRoot,
