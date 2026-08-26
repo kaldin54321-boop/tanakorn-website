@@ -357,23 +357,24 @@ export async function POST(request: Request) {
       "_"
     );
 
-    // On Render (ephemeral), use Supabase Storage (persistent, 5GB via RPC) as primary
-    // This ensures APK lasts forever even when PC off and Render restarts
+    // On Render (ephemeral) use Supabase (persistent) - but for 235MB single POST would hit 502 gateway, so client now uses TUS direct to Supabase for >50MB
+    // This branch is fallback for small files on Render that still go through server
     if (isRender()) {
-      // Try to fix bucket to 5GB via RPC (no card, SECURITY DEFINER)
       try {
         await supabase.rpc("fix_winlator_bucket" as any);
       } catch {}
-      // Upload temp file to Supabase storage
       const supabasePath = `${version}/${safeFileName}`;
-      const fileBuffer = fs.readFileSync(tempFilePath);
-      // Use service_role if available via env, else use current supabase client (may need RLS)
-      const { error: uploadError } = await supabase.storage
-        .from("winlator-releases")
-        .upload(supabasePath, fileBuffer, {
+      // Stream file to Supabase to avoid loading 235MB into memory (fixes 502 + OOM)
+      const fileStream = fs.createReadStream(tempFilePath);
+      const { error: uploadError } = await (supabase.storage.from("winlator-releases") as any).upload(
+        supabasePath,
+        fileStream as any,
+        {
           contentType: fileType,
           upsert: false,
-        });
+          duplex: "half",
+        }
+      );
       // Clean temp
       try { fs.unlinkSync(tempFilePath); } catch {}
       if (uploadError) {
