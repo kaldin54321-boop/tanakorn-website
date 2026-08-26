@@ -410,7 +410,9 @@ export async function POST(request: Request) {
       );
     }
 
-    fs.renameSync(tempFilePath, finalPath);
+    // Use copyFileSync + unlinkSync for cross-device move (EXDEV fix)
+    fs.copyFileSync(tempFilePath, finalPath);
+    try { fs.unlinkSync(tempFilePath); } catch {}
     const dbFilePath = path
       .join("uploads", "releases", version, safeFileName)
       .replace(/\\/g, "/");
