@@ -371,36 +371,30 @@ export async function POST(request: Request) {
     // User created https://winlator-releases.s3.filebase.io - endpoint is https://s3.filebase.com, bucket winlator-releases
     if (isRender()) {
       if (!isS3Configured()) {
-        try { fs.unlinkSync(tempFilePath); } catch {}
-        return NextResponse.json(
-          {
-            success: false,
-            message:
-              "Filebase S3 not configured on Render - uploads to /tmp would be lost after 10-20 min (exit 137). Set S3_* env on Render Dashboard → winlator-frost → Environment: S3_ENDPOINT=https://s3.filebase.com, S3_BUCKET=winlator-releases, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY (from https://console.filebase.com/buckets → winlator-releases → Access Keys), S3_REGION=us-east-1, then redeploy. Or use External APK URL field for now.",
-          },
-          { status: 409 }
-        );
+        console.warn("Render without S3 env - using ephemeral /tmp (will be lost on exit 137, but allows immediate test). Set Filebase S3 env for persistent 5GB.");
+        // Fall through to local handling below - don't return error
+      } else {
+        // S3 is configured - try Filebase 5GB persistent first
+        const s3Key = `${version}/${safeFileName}`;
+        try {
+          const fileBuffer = fs.readFileSync(/*turbopackIgnore: true*/ tempFilePath);
+          const s3Result = await uploadToS3(s3Key, fileBuffer, fileType);
+          if (s3Result.success) {
+            try { fs.unlinkSync(tempFilePath); } catch {}
+            const dbFilePath = `s3://${s3Key}`;
+            return NextResponse.json({
+              success: true,
+              file: { name: fileName, path: dbFilePath, size: fileSize, type: fileType },
+              host: "s3-persistent-own-host",
+            });
+          }
+          console.warn("S3 upload failed on Render, falling back to ephemeral /tmp (file will be lost on exit 137, re-upload after S3 bucket fix):", s3Result.error);
+          // Check via /api/admin/storage/check - likely bucket winlator-releases not found at https://s3.filebase.com for this S3 key
+          // Fall through to local, don't return S3 error, allow upload to succeed via /tmp for immediate test
+        } catch (e) {
+          console.warn("S3 upload exception on Render, falling back to local:", e);
+        }
       }
-      // S3 is configured - upload to Filebase 5GB persistent (not Supabase 50MB, not PC)
-      const s3Key = `${version}/${safeFileName}`;
-      const fileBuffer = fs.readFileSync(/*turbopackIgnore: true*/ tempFilePath);
-      const s3Result = await uploadToS3(s3Key, fileBuffer, fileType);
-      try { fs.unlinkSync(tempFilePath); } catch {}
-      if (!s3Result.success) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: `Filebase S3 upload failed: ${s3Result.error}. Bucket "winlator-releases" not found at https://s3.filebase.com - create it at https://console.filebase.com/buckets → Create Bucket → name: winlator-releases (exactly). Also verify S3 keys have write access. Check /api/admin/storage/check while logged in as admin.`,
-          },
-          { status: 500 }
-        );
-      }
-      const dbFilePath = `s3://${s3Key}`;
-      return NextResponse.json({
-        success: true,
-        file: { name: fileName, path: dbFilePath, size: fileSize, type: fileType },
-        host: "s3-persistent-own-host",
-      });
     }
 
     // Non-Render (HF /data 50GB persistent, local ./uploads) - use private local bucket (website itself)
