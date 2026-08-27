@@ -368,9 +368,10 @@ export async function POST(request: Request) {
     // This is your own bucket, not MediaFire/Drive/Mega, separate from Supabase news
     if (isS3Configured()) {
       const s3Key = `${version}/${safeFileName}`;
-      // Stream temp file to S3 via multipart (5GB) - turbopackIgnore for dynamic path
-      const fileStream = fs.createReadStream(/*turbopackIgnore: true*/ tempFilePath);
-      const s3Result = await uploadToS3(s3Key, fileStream as any, fileType);
+      // Use Buffer for Filebase S3 to avoid "Unable to calculate hash for flowing readable stream"
+      // For 239MB, Buffer is okay (Render has 512MB RAM, HF has 16GB). For 5GB, multipart will handle via S3 Upload
+      const fileBuffer = fs.readFileSync(/*turbopackIgnore: true*/ tempFilePath);
+      const s3Result = await uploadToS3(s3Key, fileBuffer, fileType);
       try { fs.unlinkSync(tempFilePath); } catch {}
       if (!s3Result.success) {
         return NextResponse.json({ success: false, message: `S3 upload failed: ${s3Result.error}. Check S3_* env (endpoint, bucket, keys) and bucket CORS.` }, { status: 500 });
