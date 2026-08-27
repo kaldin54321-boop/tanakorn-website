@@ -418,25 +418,55 @@ export async function POST(request: Request) {
       );
     }
 
-    // Robust move: try rename (same device, fast), fallback to copy+unlink for cross-device (EXDEV) + handle ENOENT
+    // Robust move: ensure temp exists, ensure dir, then try rename/copy
+    // Temp file may be on /data or /tmp depending on isHF check at file start vs now
     if (!fs.existsSync(tempFilePath)) {
-      return NextResponse.json({ success: false, message: `Temp file not found: ${tempFilePath} (upload may have been cleaned). Try re-uploading.` }, { status: 500 });
+      // Try alternative tmp location (Render vs HF mismatch)
+      const altTmp = tempFilePath.includes("/data/")
+        ? tempFilePath.replace("/data/uploads/tmp", "/tmp/uploads/tmp").replace("/data\\uploads\\tmp", "/tmp/uploads/tmp")
+        : tempFilePath.replace("/tmp/uploads/tmp", "/data/uploads/tmp");
+      if (fs.existsSync(altTmp)) {
+        tempFilePath = altTmp;
+      } else {
+        // Check if file was already moved to final (race) or cleaned
+        if (fs.existsSync(finalPath)) {
+          // Already at final, treat as success
+          const dbFilePathAlt = path.join("uploads", "releases", version, safeFileName).replace(/\\/g, "/");
+          return NextResponse.json({
+            success: true,
+            file: { name: fileName, path: dbFilePathAlt, size: fileSize, type: fileType },
+            host: "local",
+          });
+        }
+        return NextResponse.json({ success: false, message: `Temp file not found: ${tempFilePath} (also checked ${altTmp}). Upload may have been cleaned by tmpwatch or failed mid-stream. Try re-uploading with smaller chunk or check Render logs for busboy error.` }, { status: 500 });
+      }
+    }
+    // Ensure final dir exists (with space in "11.1 V2")
+    try {
+      ensureDir(finalDir);
+    } catch (e) {
+      return NextResponse.json({ success: false, message: `Failed to create dir ${finalDir}: ${e instanceof Error ? e.message : String(e)}` }, { status: 500 });
     }
     try {
       fs.renameSync(tempFilePath, finalPath);
     } catch (e) {
-      const msg = e instanceof Error ? (e as NodeJS.ErrnoException).code || e.message : String(e);
-      if (msg === "EXDEV" || String(msg).includes("EXDEV") || String(msg).includes("cross-device")) {
+      const code = e instanceof Error ? (e as NodeJS.ErrnoException).code || e.message : String(e);
+      if (code === "EXDEV" || String(code).includes("EXDEV") || String(code).includes("cross-device")) {
         fs.copyFileSync(tempFilePath, finalPath);
         try { fs.unlinkSync(tempFilePath); } catch {}
-      } else if (String(msg).includes("ENOENT")) {
-        // Ensure dir exists again and retry copy
+      } else if (String(code).includes("ENOENT")) {
+        // Retry after re-ensuring dir and checking temp again
         try { ensureDir(finalDir); } catch {}
-        if (!fs.existsSync(tempFilePath)) {
-          return NextResponse.json({ success: false, message: `Temp file missing before copy: ${tempFilePath}` }, { status: 500 });
+        // Re-resolve temp if still on other FS
+        let src = tempFilePath;
+        if (!fs.existsSync(src)) {
+          const alt = src.includes("/data/") ? src.replace("/data/", "/tmp/") : src.replace("/tmp/", "/data/");
+          if (fs.existsSync(alt)) src = alt;
+          else return NextResponse.json({ success: false, message: `Temp file missing before copy: ${src}` }, { status: 500 });
         }
-        fs.copyFileSync(tempFilePath, finalPath);
-        try { fs.unlinkSync(tempFilePath); } catch {}
+        fs.copyFileSync(src, finalPath);
+        try { fs.unlinkSync(src); } catch {}
+        try { if (src !== tempFilePath) fs.unlinkSync(tempFilePath); } catch {}
       } else {
         throw e;
       }
