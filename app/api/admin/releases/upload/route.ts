@@ -208,10 +208,12 @@ export async function POST(request: Request) {
             return;
           }
 
-          const isHF2 =
-            !!process.env.SPACE_ID ||
-            fs.existsSync("/data");
-          const tmpBase = isHF2 ? "/data" : process.cwd();
+          // Use same base as uploadsRoot to avoid EXDEV/ENOENT cross-device (Render: /tmp, HF: /data, local: cwd)
+          const tmpBase = uploadsRoot.includes("/tmp")
+            ? "/tmp"
+            : uploadsRoot.includes("/data")
+            ? "/data"
+            : process.cwd();
           const tmpDir = path.join(
             /*turbopackIgnore: true*/ tmpBase,
             "uploads",
