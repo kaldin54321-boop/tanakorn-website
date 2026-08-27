@@ -365,42 +365,65 @@ export async function POST(request: Request) {
       "_"
     );
 
-    // Private bucket handled by website itself (busboy local) - persistent, not Supabase 50MB, not PC-dependent when on HF/Render with S3
-    // Priority: S3 own host if configured (Filebase/Storj/R2), else local file host (HF /data persistent 50GB, local ./uploads, Render /tmp ephemeral)
-    // User wants to move back to private bucket (local) that was before Filebase, and keep Supabase only for news/dashboard/videos
-    // So for local file host, we use busboy + local file system, not S3 and not Supabase
-    // Private bucket (website itself) is primary - S3 Filebase is optional persistent for Render
-    // If S3 is configured and upload succeeds, use s3://, else fallback to local file host (busboy)
-    let s3Success = false;
-    let s3FilePath: string | null = null;
+    // Private bucket (website itself) must be persistent on Render, not ephemeral /tmp
+    // Render Free /tmp is cleaned every 10-20 min (exit 137) → file lost → download 404
+    // So on Render, we MUST use S3 5GB (Filebase) as primary persistent, not local
+    // User created https://winlator-releases.s3.filebase.io - endpoint is https://s3.filebase.com, bucket winlator-releases
+    if (isRender()) {
+      if (!isS3Configured()) {
+        try { fs.unlinkSync(tempFilePath); } catch {}
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Filebase S3 not configured on Render - uploads to /tmp would be lost after 10-20 min (exit 137). Set S3_* env on Render Dashboard → winlator-frost → Environment: S3_ENDPOINT=https://s3.filebase.com, S3_BUCKET=winlator-releases, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY (from https://console.filebase.com/buckets → winlator-releases → Access Keys), S3_REGION=us-east-1, then redeploy. Or use External APK URL field for now.",
+          },
+          { status: 409 }
+        );
+      }
+      // S3 is configured - upload to Filebase 5GB persistent (not Supabase 50MB, not PC)
+      const s3Key = `${version}/${safeFileName}`;
+      const fileBuffer = fs.readFileSync(/*turbopackIgnore: true*/ tempFilePath);
+      const s3Result = await uploadToS3(s3Key, fileBuffer, fileType);
+      try { fs.unlinkSync(tempFilePath); } catch {}
+      if (!s3Result.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: `Filebase S3 upload failed: ${s3Result.error}. Bucket "winlator-releases" not found at https://s3.filebase.com - create it at https://console.filebase.com/buckets → Create Bucket → name: winlator-releases (exactly). Also verify S3 keys have write access. Check /api/admin/storage/check while logged in as admin.`,
+          },
+          { status: 500 }
+        );
+      }
+      const dbFilePath = `s3://${s3Key}`;
+      return NextResponse.json({
+        success: true,
+        file: { name: fileName, path: dbFilePath, size: fileSize, type: fileType },
+        host: "s3-persistent-own-host",
+      });
+    }
+
+    // Non-Render (HF /data 50GB persistent, local ./uploads) - use private local bucket (website itself)
+    // This is the private bucket before Filebase, PC can be off for HF, local PC must stay on for local
     if (isS3Configured()) {
       const s3Key = `${version}/${safeFileName}`;
       try {
-        // Use streaming read for S3 to avoid loading 5GB into memory when possible, but Buffer is okay for 239MB
-        // Keep temp file for fallback if S3 fails - don't delete yet
         const fileBuffer = fs.readFileSync(/*turbopackIgnore: true*/ tempFilePath);
         const s3Result = await uploadToS3(s3Key, fileBuffer, fileType);
         if (s3Result.success) {
-          s3Success = true;
-          s3FilePath = `s3://${s3Key}`;
-          // Only delete temp after successful S3
           try { fs.unlinkSync(tempFilePath); } catch {}
+          const dbFilePath = `s3://${s3Key}`;
           return NextResponse.json({
             success: true,
-            file: { name: fileName, path: s3FilePath, size: fileSize, type: fileType },
+            file: { name: fileName, path: dbFilePath, size: fileSize, type: fileType },
             host: "s3-persistent-own-host",
           });
-        } else {
-          console.warn("S3 upload failed, falling back to local private bucket:", s3Result.error, " - Render logs also show this. Filebase bucket https://winlator-releases.s3.filebase.io must be created at https://console.filebase.com/buckets and S3_* env set on Render.");
-          // Don't delete temp - keep for local fallback below
         }
+        console.warn("S3 upload failed, falling back to local private bucket:", s3Result.error);
       } catch (e) {
         console.warn("S3 upload exception, falling back to local:", e);
-        // Keep temp for local
       }
     }
-    // No S3 or S3 failed - use private local bucket (busboy) - this is the "private bucket handle by the website itself" before Filebase
-    // HF: /data/uploads (50GB persistent, PC can be off), local: ./uploads, Render: /tmp/uploads (ephemeral) + fallback to S3 if configured
 
     const finalDir = path.join(
       /*turbopackIgnore: true*/ uploadsRoot,
