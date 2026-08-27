@@ -363,32 +363,31 @@ export async function POST(request: Request) {
       "_"
     );
 
-    // Priority 1: S3-compatible own host (Storj 25GB free no card / Filebase 5GB free no card / R2 10GB) - persistent, not PC-dependent, not Supabase 50MB
-    // Configured via S3_* env (S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY)
-    // This is your own bucket, not MediaFire/Drive/Mega, separate from Supabase news
+    // Private bucket handled by website itself (busboy local) - persistent, not Supabase 50MB, not PC-dependent when on HF/Render with S3
+    // Priority: S3 own host if configured (Filebase/Storj/R2), else local file host (HF /data persistent 50GB, local ./uploads, Render /tmp ephemeral)
+    // User wants to move back to private bucket (local) that was before Filebase, and keep Supabase only for news/dashboard/videos
+    // So for local file host, we use busboy + local file system, not S3 and not Supabase
     if (isS3Configured()) {
+      // If S3 is configured (Filebase/Storj/R2), use it as primary for 5GB persistent (user created winlator-releases.s3.filebase.io)
       const s3Key = `${version}/${safeFileName}`;
-      // Use Buffer for Filebase S3 to avoid "Unable to calculate hash for flowing readable stream"
-      // For 239MB, Buffer is okay (Render has 512MB RAM, HF has 16GB). For 5GB, multipart will handle via S3 Upload
       const fileBuffer = fs.readFileSync(/*turbopackIgnore: true*/ tempFilePath);
       const s3Result = await uploadToS3(s3Key, fileBuffer, fileType);
       try { fs.unlinkSync(tempFilePath); } catch {}
       if (!s3Result.success) {
-        return NextResponse.json({ success: false, message: `S3 upload failed: ${s3Result.error}. Check S3_* env (endpoint, bucket, keys) and bucket CORS.` }, { status: 500 });
+        // If S3 fails (bucket not exist, etc.), fallback to local instead of showing Supabase error
+        console.warn("S3 upload failed, falling back to local:", s3Result.error);
+        // Fall through to local handling below, don't return error
+      } else {
+        const dbFilePath = `s3://${s3Key}`;
+        return NextResponse.json({
+          success: true,
+          file: { name: fileName, path: dbFilePath, size: fileSize, type: fileType },
+          host: "s3-persistent-own-host",
+        });
       }
-      // Store S3 key as file_path with s3:// prefix to distinguish from local/uploads and Supabase
-      const dbFilePath = `s3://${s3Key}`;
-      return NextResponse.json({
-        success: true,
-        file: { name: fileName, path: dbFilePath, size: fileSize, type: fileType },
-        host: "s3-persistent-own-host",
-      });
     }
-
-    // Supabase is NEVER used for APKs - per user request: APKs must go to Filebase/S3 own host or local, not Supabase 50MB
-    // Supabase remains only for news/dashboard/videos table data, not for APK bucket
-    // If S3 not configured (isS3Configured() == false), fallback to local file host below
-    // For Render Free, local is ephemeral (/tmp) - user MUST set Filebase S3 env for persistent 5GB (see .env.example)
+    // No S3 or S3 failed - use private local bucket (busboy) - this is the "private bucket handle by the website itself" before Filebase
+    // HF: /data/uploads (50GB persistent, PC can be off), local: ./uploads, Render: /tmp/uploads (ephemeral) + fallback to S3 if configured
 
     const finalDir = path.join(
       /*turbopackIgnore: true*/ uploadsRoot,
