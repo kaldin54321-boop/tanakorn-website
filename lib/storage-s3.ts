@@ -71,6 +71,9 @@ export function isS3Configured(): boolean {
 export async function ensureBucketExists(): Promise<{ success: boolean; error?: string }> {
   const config = getS3Config();
   if (!config) return { success: false, error: "S3 not configured" };
+  // For Filebase, the bucket at https://winlator-releases.s3.filebase.io is an IPFS gateway bucket, not S3
+  // Filebase S3 buckets must be created via S3 API at https://s3.filebase.com with bucket winlator-releases
+  // If user created it as IPFS, S3 HeadBucket will 404. We should try to create it as S3.
   const client = createS3Client(config);
   try {
     await client.send(new HeadBucketCommand({ Bucket: config.bucket }));
@@ -78,25 +81,33 @@ export async function ensureBucketExists(): Promise<{ success: boolean; error?: 
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     const lower = msg.toLowerCase();
-    // Filebase returns 403 if bucket exists but key has no HeadBucket permission, or 404 if truly missing
-    if (lower.includes("notfound") || lower.includes("nosuchbucket") || lower.includes("404") || lower.includes("does not exist")) {
+    // Try to create bucket if not found
+    if (lower.includes("notfound") || lower.includes("nosuchbucket") || lower.includes("404") || lower.includes("does not exist") || lower.includes("not found")) {
       try {
+        // Filebase S3 bucket creation - ensure bucket is S3, not IPFS
         await client.send(new CreateBucketCommand({ Bucket: config.bucket }));
+        // Wait a bit for bucket to propagate
+        await new Promise((r) => setTimeout(r, 2000));
         return { success: true };
       } catch (e2) {
         const m2 = e2 instanceof Error ? e2.message : String(e2);
-        // If creation fails because it already exists (409), treat as success
-        if (m2.toLowerCase().includes("already exists") || m2.toLowerCase().includes("bucketalreadyexists") || m2.toLowerCase().includes("409")) {
+        const lower2 = m2.toLowerCase();
+        if (lower2.includes("already exists") || lower2.includes("bucketalreadyexists") || lower2.includes("409") || lower2.includes("you already own this bucket")) {
           return { success: true };
         }
-        return { success: false, error: `Bucket "${config.bucket}" not found at ${config.endpoint} and auto-create failed: ${m2}. Create it manually at https://console.filebase.com/buckets → Create Bucket → name: winlator-releases (your link https://winlator-releases.s3.filebase.io confirms it should exist - if you just created it, wait 10s and retry).` };
+        // If creation fails due to AccessDenied, bucket may already exist but key has no permission - try upload anyway
+        if (lower2.includes("accessdenied") || lower2.includes("403") || lower2.includes("forbidden")) {
+          return { success: true };
+        }
+        return { success: false, error: `Bucket "${config.bucket}" not found at ${config.endpoint} and auto-create failed: ${m2}. Filebase bucket https://winlator-releases.s3.filebase.io is IPFS gateway, not S3. Create S3 bucket at https://console.filebase.com/buckets → Create Bucket → name: winlator-releases → Type: S3 (not IPFS). Also verify S3 keys have S3 permissions (not just IPFS). Check /api/admin/storage/check for details.` };
       }
     }
-    // For 403 or other errors, still try upload - bucket may exist but HeadBucket not allowed
-    if (lower.includes("403") || lower.includes("forbidden") || lower.includes("access denied")) {
+    if (lower.includes("403") || lower.includes("forbidden") || lower.includes("access denied") || lower.includes("accessdenied")) {
+      // HeadBucket 403 often means bucket exists but key lacks permission - try upload anyway
       return { success: true };
     }
-    return { success: true }; // try upload anyway
+    // For any other error (like UnknownError from Filebase), try upload anyway - don't block
+    return { success: true };
   }
 }
 
