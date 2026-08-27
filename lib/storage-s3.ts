@@ -70,15 +70,26 @@ export async function ensureBucketExists(): Promise<{ success: boolean; error?: 
     return { success: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    if (msg.includes("NotFound") || msg.includes("NoSuchBucket") || msg.includes("404")) {
+    const lower = msg.toLowerCase();
+    // Filebase returns 403 if bucket exists but key has no HeadBucket permission, or 404 if truly missing
+    if (lower.includes("notfound") || lower.includes("nosuchbucket") || lower.includes("404") || lower.includes("does not exist")) {
       try {
         await client.send(new CreateBucketCommand({ Bucket: config.bucket }));
         return { success: true };
       } catch (e2) {
-        return { success: false, error: `Bucket "${config.bucket}" does not exist and auto-create failed: ${e2 instanceof Error ? e2.message : String(e2)} | Check Filebase dashboard that bucket winlator-releases exists at ${config.endpoint}` };
+        const m2 = e2 instanceof Error ? e2.message : String(e2);
+        // If creation fails because it already exists (409), treat as success
+        if (m2.toLowerCase().includes("already exists") || m2.toLowerCase().includes("bucketalreadyexists") || m2.toLowerCase().includes("409")) {
+          return { success: true };
+        }
+        return { success: false, error: `Bucket "${config.bucket}" not found at ${config.endpoint} and auto-create failed: ${m2}. Create it manually at https://console.filebase.com/buckets → Create Bucket → name: winlator-releases (your link https://winlator-releases.s3.filebase.io confirms it should exist - if you just created it, wait 10s and retry).` };
       }
     }
-    return { success: true }; // bucket exists or other error, try upload anyway
+    // For 403 or other errors, still try upload - bucket may exist but HeadBucket not allowed
+    if (lower.includes("403") || lower.includes("forbidden") || lower.includes("access denied")) {
+      return { success: true };
+    }
+    return { success: true }; // try upload anyway
   }
 }
 
