@@ -22,17 +22,25 @@ function isLocalPath(p: string): boolean {
 }
 
 function getLocalFilePath(dbPath: string): string {
-  // HF Spaces persistent is /data, local/Oracle is process.cwd()/uploads
-  // Try /data first (HF), then fallback
-  const hfPath = path.join(
-    /*turbopackIgnore: true*/ "/data",
-    dbPath
-  );
-  if (fs.existsSync(hfPath)) return hfPath;
-  return path.join(
-    /*turbopackIgnore: true*/ process.cwd(),
-    dbPath
-  );
+  // Check all possible local locations: HF /data, Render /tmp, and local ./uploads
+  // Upload saves to /tmp on Render, /data on HF, ./uploads locally
+  const candidates = [
+    path.join(/*turbopackIgnore: true*/ "/data", dbPath),
+    path.join(/*turbopackIgnore: true*/ "/tmp", dbPath),
+    path.join(/*turbopackIgnore: true*/ process.cwd(), dbPath),
+    path.join(/*turbopackIgnore: true*/ "/app", dbPath),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  // Default to /tmp on Render, /data on HF, or cwd
+  if (process.env.RENDER || process.env.RENDER_SERVICE_ID) {
+    return path.join(/*turbopackIgnore: true*/ "/tmp", dbPath);
+  }
+  if (fs.existsSync("/data")) {
+    return path.join(/*turbopackIgnore: true*/ "/data", dbPath);
+  }
+  return path.join(/*turbopackIgnore: true*/ process.cwd(), dbPath);
 }
 
 export async function GET(
