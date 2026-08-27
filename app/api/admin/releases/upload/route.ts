@@ -395,7 +395,13 @@ export async function POST(request: Request) {
       /*turbopackIgnore: true*/ uploadsRoot,
       version
     );
-    ensureDir(finalDir);
+    // Ensure final dir exists (handle version with spaces like "11.1 V2")
+    try {
+      ensureDir(finalDir);
+    } catch (e) {
+      try { fs.unlinkSync(tempFilePath); } catch {}
+      return NextResponse.json({ success: false, message: `Failed to create directory ${finalDir}: ${e instanceof Error ? e.message : String(e)}` }, { status: 500 });
+    }
     const finalPath = path.join(
       /*turbopackIgnore: true*/ finalDir,
       safeFileName
@@ -412,9 +418,29 @@ export async function POST(request: Request) {
       );
     }
 
-    // Use copyFileSync + unlinkSync for cross-device move (EXDEV fix)
-    fs.copyFileSync(tempFilePath, finalPath);
-    try { fs.unlinkSync(tempFilePath); } catch {}
+    // Robust move: try rename (same device, fast), fallback to copy+unlink for cross-device (EXDEV) + handle ENOENT
+    if (!fs.existsSync(tempFilePath)) {
+      return NextResponse.json({ success: false, message: `Temp file not found: ${tempFilePath} (upload may have been cleaned). Try re-uploading.` }, { status: 500 });
+    }
+    try {
+      fs.renameSync(tempFilePath, finalPath);
+    } catch (e) {
+      const msg = e instanceof Error ? (e as NodeJS.ErrnoException).code || e.message : String(e);
+      if (msg === "EXDEV" || String(msg).includes("EXDEV") || String(msg).includes("cross-device")) {
+        fs.copyFileSync(tempFilePath, finalPath);
+        try { fs.unlinkSync(tempFilePath); } catch {}
+      } else if (String(msg).includes("ENOENT")) {
+        // Ensure dir exists again and retry copy
+        try { ensureDir(finalDir); } catch {}
+        if (!fs.existsSync(tempFilePath)) {
+          return NextResponse.json({ success: false, message: `Temp file missing before copy: ${tempFilePath}` }, { status: 500 });
+        }
+        fs.copyFileSync(tempFilePath, finalPath);
+        try { fs.unlinkSync(tempFilePath); } catch {}
+      } else {
+        throw e;
+      }
+    }
     const dbFilePath = path
       .join("uploads", "releases", version, safeFileName)
       .replace(/\\/g, "/");
