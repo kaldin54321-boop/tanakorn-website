@@ -39,8 +39,15 @@ function getS3Config(): S3Config | null {
     };
   }
 
-  // No S3 env - upload will use local (HF /data persistent, Render /tmp ephemeral)
-  // For Render persistent 5GB without PC, set S3_* to Storj/Filebase free bucket
+  // No S3 env - for Render free, fallback to Supabase 5GB (via fix_winlator_bucket RPC) as persistent own host
+  // Local /tmp on Render is ephemeral (lost on exit 137), so we try Supabase first for Render
+  if (typeof process !== "undefined" && (process.env.RENDER || process.env.RENDER_SERVICE_ID)) {
+    // On Render, try to use Supabase as fallback S3 (with 5GB via RPC) if S3 not configured
+    // Supabase S3 endpoint is https://xcahjcxoacyxouvkcvcq.supabase.co/storage/v1/s3
+    // But we need S3-compatible endpoint for Supabase Storage S3 API
+    // For now, return null and let upload route handle Render via Supabase directly
+    return null;
+  }
   return null;
 }
 
