@@ -279,17 +279,12 @@ export default function DownloadButton({
             <span style={{ fontSize: "11px", color: "var(--muted)", textAlign: "center" }}>
               {isExternal
                 ? hasSize
-                  ? `External • ${formatBytes(displaySize!)} • proxied on-site`
-                  : "External • Size detected on download • proxied on-site"
+                  ? `External • ${formatBytes(displaySize!)}`
+                  : "External • Size detected on download"
                 : hasSize
                   ? `${formatBytes(displaySize!)} • resumable`
                   : "Resumable download"}
             </span>
-            {isExternal && externalUrl && (
-              <span style={{ fontSize: "10px", color: "var(--muted)", wordBreak: "break-all", opacity: 0.7, textAlign: "center", maxWidth: "100%" }}>
-                Source resolved on-site ({externalUrl.slice(0, 50)}{externalUrl.length > 50 ? "…" : ""})
-              </span>
-            )}
           </div>
         </>
       )}
