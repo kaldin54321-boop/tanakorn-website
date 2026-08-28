@@ -76,10 +76,18 @@ export default function Footer() {
       </div>
 
 
-      <div className="footer-bottom footer-bottom-col">
+      <div className="footer-bottom footer-bottom-col1">
 
-        <span>
-          Copyright © Frost Apps & Games Software Co., Ltd. 2023-2026. All rights reserved.
+        <span> className="footer-bottom-copyright"{">"}
+          Copyright © Frost Apps & Games Software Co., Ltd. 2023-2026.
+        </span>
+
+        <span> className="footer-bottom-thai"{">"}
+          บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569
+        </span>
+
+        <span> className="footer-bottom-rights"{">"}
+          All rights reserved.
         </span>
 
         <span className="footer-built">
