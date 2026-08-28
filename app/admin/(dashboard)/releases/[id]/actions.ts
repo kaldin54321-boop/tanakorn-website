@@ -131,6 +131,37 @@ export async function updateRelease(
       formData.get("android_version") ?? ""
     ).trim();
 
+  const externalUrlRaw =
+    String(
+      formData.get("external_url") ?? ""
+    ).trim();
+
+  let externalUrl: string | null = null;
+  if (externalUrlRaw) {
+    try {
+      const u = new URL(externalUrlRaw);
+      if (
+        u.protocol !== "http:" &&
+        u.protocol !== "https:"
+      ) {
+        return {
+          success: false,
+          message:
+            "External URL must start with http:// or https://",
+        };
+      }
+      externalUrl = externalUrlRaw;
+    } catch {
+      return {
+        success: false,
+        message: "External URL is not valid.",
+      };
+    }
+  } else if (formData.has("external_url")) {
+    // Field present but empty => clear external_url
+    externalUrl = null;
+  }
+
 
   if (
     !version ||
@@ -162,24 +193,26 @@ export async function updateRelease(
   }
 
 
+  // Only include external_url in update if field was submitted
+  const updatePayload: Record<string, any> = {
+    version,
+    name,
+    status,
+    architecture,
+    release_date: releaseDate,
+    description: description || null,
+    wine_version: wineVersion || null,
+    android_version: androidVersion || null,
+  };
+  if (formData.has("external_url")) {
+    updatePayload.external_url = externalUrl;
+  }
+
   const {
     error,
   } = await supabase
     .from("releases")
-    .update({
-      version,
-      name,
-      status,
-      architecture,
-      release_date:
-        releaseDate,
-      description:
-        description || null,
-      wine_version:
-        wineVersion || null,
-      android_version:
-        androidVersion || null,
-    })
+    .update(updatePayload)
     .eq("id", id);
 
 

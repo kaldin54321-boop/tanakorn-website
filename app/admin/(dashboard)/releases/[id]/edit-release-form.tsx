@@ -22,6 +22,10 @@ type Release = {
   description: string | null;
   wine_version: string | null;
   android_version: string | null;
+  external_url?: string | null;
+  file_name?: string | null;
+  file_path?: string | null;
+  file_size?: number | null;
 };
 
 
@@ -275,6 +279,46 @@ export default function EditReleaseForm({
 
       </div>
 
+
+      {/* -------------------------------- */}
+      {/* External URL (visible in edit)   */}
+      {/* -------------------------------- */}
+
+      <div className="admin-form-section">
+        <h2>APK Download Source</h2>
+        <p className="admin-page-description" style={{ marginBottom: "16px" }}>
+          Paste a direct external URL (Google Drive direct link, MediaFire direct, Mega, R2/S3, etc.)
+          for 239 MB+ files. This will be used as the download source and proxied through the site
+          so download happens inside the website (no new tab redirect). Leave empty to keep current file.
+        </p>
+        <label>
+          External APK URL
+          <input
+            name="external_url"
+            type="url"
+            defaultValue={(release as any).external_url ?? ""}
+            placeholder="https://drive.google.com/file/d/ID/view or https://s3.filebase.com/... or https://www.mediafire.com/file/.../direct"
+          />
+          <span style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px", display: "block" }}>
+            Direct links work best. For Google Drive, paste the share link — system will resolve to direct download.
+            For MediaFire/Mega, paste the direct download link if available; otherwise the proxy will attempt to resolve it.
+            Clear this field to remove external URL.
+          </span>
+        </label>
+        {(release as any).external_url && (
+          <div style={{ marginTop: "10px", padding: "10px 12px", background: "rgba(141,220,255,0.06)", border: "1px solid rgba(141,220,255,0.18)", borderRadius: "8px", fontSize: "12px", wordBreak: "break-all" }}>
+            Current: {(release as any).external_url}
+          </div>
+        )}
+        {(release as any).file_path && (
+          <div style={{ marginTop: "10px", fontSize: "12px", color: "var(--muted)" }}>
+            Current file: {(release as any).file_name || (release as any).file_path} {(release as any).file_size ? `(${(release as any).file_size / 1024 / 1024} MB)` : ""}
+          </div>
+        )}
+        <div style={{ marginTop: "12px", padding: "10px 12px", background: "rgba(255,221,0,0.06)", border: "1px solid rgba(255,221,0,0.18)", borderRadius: "8px", fontSize: "11px", color: "var(--muted)" }}>
+          Note: Setting an external URL will override local/S3 file. The download will be proxied through /api/downloads/[version] so it stays on-site.
+        </div>
+      </div>
 
       {/* -------------------------------- */}
       {/* Error                            */}

@@ -1,11 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   version: string;
   fileName: string;
   fileSize: number | null;
+  isExternal?: boolean;
+  externalUrl?: string;
+  initialDownloadCount?: number | null;
 };
 
 function formatBytes(bytes: number) {
@@ -16,18 +19,74 @@ function formatBytes(bytes: number) {
 
 export default function DownloadButton({
   version,
-  fileName,
+  fileName: initialFileName,
   fileSize,
+  isExternal = false,
+  externalUrl,
+  initialDownloadCount = null,
 }: Props) {
+  const [fileName, setFileName] = useState(initialFileName);
   const [downloading, setDownloading] = useState(false);
   const [paused, setPaused] = useState(false);
   const [progress, setProgress] = useState(0);
   const [bytesReceived, setBytesReceived] = useState(0);
   const [bytesTotal, setBytesTotal] = useState<number | null>(fileSize);
   const [error, setError] = useState("");
+  const [downloadCount, setDownloadCount] = useState<number>(initialDownloadCount ?? 0);
+  const [resolvedInfo, setResolvedInfo] = useState<{ fileName?: string; fileSize?: number | null } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const receivedRef = useRef(0);
+
+  // Fetch external URL metadata (file name/size) on mount for display
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchInfo() {
+      try {
+        // Always fetch fresh download count and file info
+        const res = await fetch(`/api/downloads/${encodeURIComponent(version)}?info=1`, { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        if (data.success) {
+          if (data.download_count !== undefined) {
+            // info endpoint for external doesn't return download_count, but increment does
+            // fetch download count is via increment GET? Instead we fetch via separate call if needed
+          }
+          if (data.file_name && data.file_name !== initialFileName) {
+            setFileName(data.file_name);
+          }
+          if (data.file_size && data.file_size !== fileSize) {
+            setBytesTotal(data.file_size);
+            setResolvedInfo({ fileName: data.file_name, fileSize: data.file_size });
+          }
+          // Also provider hint for external
+          if (data.file_size) setBytesTotal(data.file_size);
+        }
+      } catch {}
+    }
+    fetchInfo();
+    // Also fetch live download count separately via polling (lightweight)
+    async function fetchCount() {
+      try {
+        const cRes = await fetch(`/api/downloads/${encodeURIComponent(version)}/increment`, {
+          method: "GET" as any,
+        }).catch(() => null);
+        // Fallback: the increment GET doesn't exist, use info polling for count if available
+        // Instead just keep initial count; count updates on download via POST
+      } catch {}
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [version, initialFileName, fileSize]);
+
+  // Keep downloadCount in sync with initialDownloadCount prop (live from server)
+  useEffect(() => {
+    if (initialDownloadCount !== null && initialDownloadCount !== undefined) {
+      setDownloadCount(initialDownloadCount);
+    }
+  }, [initialDownloadCount]);
 
   async function startDownload(
     resumeFrom = 0,
@@ -43,136 +102,17 @@ export default function DownloadButton({
     receivedRef.current = resumeFrom;
 
     try {
-      // Resolve signed URL via API - follow redirect manually to get final URL with Range support
-      // First fetch the API redirect location
-      const headRes = await fetch(
-        `/api/downloads/${encodeURIComponent(version)}`,
-        {
-          method: "GET",
-          redirect: "manual",
-          signal: controller.signal,
-        }
-      );
-
-      let downloadUrl: string | null = null;
-
-      // If redirect, Location header contains signed URL
-      if (headRes.status >= 300 && headRes.status < 400) {
-        downloadUrl = headRes.headers.get("Location");
-      }
-
-      // Fallback: if API returned JSON error, parse
-      if (!downloadUrl) {
-        // Try fetching as JSON to get error, otherwise use redirect URL via .url
-        // For some browsers manual redirect is opaque, so just use direct URL
-        // Alternative: fetch which follows redirect and returns blob
-        // So we directly fetch the API which will redirect to Supabase
-        // Use fetch with Range header if resuming
-        const headers: Record<string, string> = {};
-        if (resumeFrom > 0) {
-          headers["Range"] = `bytes=${resumeFrom}-`;
-        }
-
-        const res = await fetch(
-          `/api/downloads/${encodeURIComponent(version)}`,
-          {
-            headers,
-            signal: controller.signal,
-          }
-        );
-
-        if (!res.ok && res.status !== 206) {
-          const data = await res
-            .json()
-            .catch(() => null);
-          throw new Error(
-            data?.message ||
-              `Download failed: ${res.status} ${res.statusText}`
-          );
-        }
-
-        const contentLength =
-          res.headers.get("Content-Length");
-        const contentRange =
-          res.headers.get("Content-Range");
-        let total = bytesTotal;
-        if (contentRange) {
-          const m = contentRange.match(
-            /bytes \d+-\d+\/(\d+)/
-          );
-          if (m) total = parseInt(m[1], 10);
-        } else if (contentLength) {
-          total =
-            parseInt(contentLength, 10) +
-            resumeFrom;
-        }
-        if (total) setBytesTotal(total);
-
-        const reader =
-          res.body?.getReader();
-        if (!reader) {
-          // Fallback: just redirect
-          window.location.href = `/api/downloads/${encodeURIComponent(version)}`;
-          setDownloading(false);
-          return;
-        }
-
-        const chunks: Blob[] = [...existingChunks];
-        let received = resumeFrom;
-
-        while (true) {
-          const { done, value } =
-            await reader.read();
-          if (done) break;
-          if (value) {
-            chunks.push(
-              new Blob([value])
-            );
-            received += value.length;
-            receivedRef.current = received;
-            chunksRef.current = chunks;
-            setBytesReceived(received);
-            const t = total || fileSize;
-            if (t) {
-              setProgress(
-                Math.round(
-                  (received / t) * 100
-                )
-              );
-              setBytesTotal(t);
-            }
-          }
-        }
-
-        // Complete - trigger download
-        const blob = new Blob(chunks);
-        const url =
-          URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(
-          () => URL.revokeObjectURL(url),
-          1000
-        );
-        setProgress(100);
-        setDownloading(false);
-        return;
-      }
-
-      // If we got direct signed URL via Location, fetch it with progress and Range
-      const headers: Record<string, string> =
-        {};
+      const headers: Record<string, string> = {};
       if (resumeFrom > 0) {
-        headers["Range"] =
-          `bytes=${resumeFrom}-`;
+        headers["Range"] = `bytes=${resumeFrom}-`;
       }
 
+      // Single fetch to our proxy - it stays on-site (no redirect to external tab)
+      // For external URLs, the API proxies the file and streams it here
+      // For S3, the API redirects to signed URL which fetch follows automatically
+      // For local files, it streams directly
       const res = await fetch(
-        downloadUrl,
+        `/api/downloads/${encodeURIComponent(version)}`,
         {
           headers,
           signal: controller.signal,
@@ -180,43 +120,45 @@ export default function DownloadButton({
       );
 
       if (!res.ok && res.status !== 206) {
+        const data = await res
+          .json()
+          .catch(() => null);
         throw new Error(
-          `Download failed: ${res.status}`
+          data?.message ||
+            `Download failed: ${res.status} ${res.statusText}`
         );
       }
 
-      const contentLength =
-        res.headers.get("Content-Length");
-      const contentRange =
-        res.headers.get("Content-Range");
+      const contentLength = res.headers.get("Content-Length");
+      const contentRange = res.headers.get("Content-Range");
+      const contentDisposition = res.headers.get("Content-Disposition");
+      // Try to extract filename from header if provided
+      if (contentDisposition) {
+        const m = contentDisposition.match(/filename="?([^"]+)"?/i);
+        if (m && m[1]) {
+          const extracted = m[1].trim();
+          if (extracted && extracted !== fileName) setFileName(extracted);
+        }
+      }
       let total = bytesTotal;
       if (contentRange) {
-        const m =
-          contentRange.match(
-            /bytes \d+-\d+\/(\d+)/
-          );
+        const m = contentRange.match(/bytes \d+-\d+\/(\d+)/);
         if (m) total = parseInt(m[1], 10);
       } else if (contentLength) {
-        total =
-          parseInt(contentLength, 10) +
-          resumeFrom;
+        total = parseInt(contentLength, 10) + resumeFrom;
       }
-      if (total) setBytesTotal(total);
+      if (total && total > 0) setBytesTotal(total);
 
       const reader = res.body?.getReader();
       if (!reader) {
-        window.location.href =
-          downloadUrl;
-        setDownloading(false);
-        return;
+        throw new Error("No readable stream - browser does not support streaming download. Trying direct link...");
       }
 
       const chunks: Blob[] = [...existingChunks];
       let received = resumeFrom;
 
       while (true) {
-        const { done, value } =
-          await reader.read();
+        const { done, value } = await reader.read();
         if (done) break;
         if (value) {
           chunks.push(new Blob([value]));
@@ -225,46 +167,44 @@ export default function DownloadButton({
           chunksRef.current = chunks;
           setBytesReceived(received);
           const t = total || fileSize;
-          if (t) {
-            setProgress(
-              Math.round(
-                (received / t) * 100
-              )
-            );
+          if (t && t > 0) {
+            setProgress(Math.round((received / t) * 100));
+            setBytesTotal(t);
+          } else if (received > 0) {
+            // For unknown total, show bytes but not percent
+            setBytesReceived(received);
           }
         }
       }
 
+      // Complete - trigger download on-site (saves to device storage, no new tab)
       const blob = new Blob(chunks);
-      const url =
-        URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = fileName;
+      // Use best filename we have
+      const finalName = fileName || initialFileName || `Winlator@Frost-${version}.apk`;
+      a.download = finalName;
       document.body.appendChild(a);
       a.click();
       a.remove();
-      setTimeout(
-        () => URL.revokeObjectURL(url),
-        1000
-      );
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       setProgress(100);
       setDownloading(false);
+      setPaused(false);
     } catch (err) {
-      if (
-        err instanceof DOMException &&
-        err.name === "AbortError"
-      ) {
-        // Paused - keep state
+      if (err instanceof DOMException && err.name === "AbortError") {
         setPaused(true);
         setDownloading(true);
         return;
       }
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Download failed."
-      );
+      // If streaming failed, fallback message (not redirect)
+      const msg = err instanceof Error ? err.message : "Download failed.";
+      if (msg.includes("No readable stream")) {
+        setError(msg + " Please try again or use Direct Link below (still on-site).");
+      } else {
+        setError(msg);
+      }
       setDownloading(false);
       setPaused(false);
     }
@@ -272,14 +212,20 @@ export default function DownloadButton({
 
   function handleDownload() {
     if (downloading && !paused) return;
-    // Reset and start fresh
     setBytesReceived(0);
     setProgress(0);
     setError("");
     chunksRef.current = [];
     receivedRef.current = 0;
-    // Increment download count (fire-and-forget, separate from Supabase download)
-    fetch(`/api/downloads/${encodeURIComponent(version)}/increment`, { method: "POST" }).catch(() => {});
+    // Increment live download count
+    fetch(`/api/downloads/${encodeURIComponent(version)}/increment`, { method: "POST" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.download_count !== undefined) {
+          setDownloadCount(data.download_count);
+        }
+      })
+      .catch(() => {});
     startDownload(0, []);
   }
 
@@ -294,10 +240,7 @@ export default function DownloadButton({
     if (paused) {
       setPaused(false);
       setDownloading(true);
-      startDownload(
-        receivedRef.current,
-        chunksRef.current
-      );
+      startDownload(receivedRef.current, chunksRef.current);
     }
   }
 
@@ -314,27 +257,41 @@ export default function DownloadButton({
     setError("");
   }
 
-  // Simple direct download fallback for quick use
-  function handleDirectDownload() {
-    window.location.href = `/api/downloads/${encodeURIComponent(version)}`;
-  }
+  const displaySize = bytesTotal ?? fileSize;
+  const hasSize = displaySize !== null && displaySize > 0;
 
   return (
-    <div
-      style={{
-        width: "100%",
-      }}
-    >
+    <div style={{ width: "100%" }}>
       {!downloading && !paused && progress === 0 && (
-        <button
-          onClick={handleDownload}
-          className="download-button"
-          style={{
-            width: "100%",
-          }}
-        >
-          DOWNLOAD APK
-        </button>
+        <>
+          <button
+            onClick={handleDownload}
+            className="download-button"
+            style={{ width: "100%" }}
+          >
+            DOWNLOAD APK
+          </button>
+          {/* Live download counts - always visible near/below Download APK button */}
+          <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "4px", alignItems: "center" }}>
+            <span style={{ fontSize: "13px", fontWeight: 800, color: "var(--frost)", letterSpacing: "0.03em" }}>
+              ⬇ {downloadCount.toLocaleString()} downloads
+            </span>
+            <span style={{ fontSize: "11px", color: "var(--muted)", textAlign: "center" }}>
+              {isExternal
+                ? hasSize
+                  ? `External • ${formatBytes(displaySize!)} • proxied on-site`
+                  : "External • Size detected on download • proxied on-site"
+                : hasSize
+                  ? `${formatBytes(displaySize!)} • resumable`
+                  : "Resumable download"}
+            </span>
+            {isExternal && externalUrl && (
+              <span style={{ fontSize: "10px", color: "var(--muted)", wordBreak: "break-all", opacity: 0.7, textAlign: "center", maxWidth: "100%" }}>
+                Source resolved on-site ({externalUrl.slice(0, 50)}{externalUrl.length > 50 ? "…" : ""})
+              </span>
+            )}
+          </div>
+        </>
       )}
 
       {(downloading || paused || progress > 0) && (
@@ -343,29 +300,19 @@ export default function DownloadButton({
             border: "1px solid var(--border)",
             borderRadius: "12px",
             padding: "16px",
-            background:
-              "rgba(141,220,255,0.04)",
+            background: "rgba(141,220,255,0.04)",
           }}
         >
           <div
             style={{
               display: "flex",
-              justifyContent:
-                "space-between",
+              justifyContent: "space-between",
               marginBottom: "8px",
               fontSize: "12px",
               color: "var(--muted)",
             }}
           >
-            <span>
-              {paused
-                ? "Paused"
-                : downloading
-                ? "Downloading..."
-                : progress === 100
-                ? "Completed"
-                : "Ready"}
-            </span>
+            <span>{paused ? "Paused" : downloading ? "Downloading..." : progress === 100 ? "Completed" : "Ready"}</span>
             <span>{progress}%</span>
           </div>
 
@@ -373,8 +320,7 @@ export default function DownloadButton({
             style={{
               width: "100%",
               height: "8px",
-              background:
-                "rgba(255,255,255,0.08)",
+              background: "rgba(255,255,255,0.08)",
               borderRadius: "999px",
               overflow: "hidden",
             }}
@@ -383,21 +329,20 @@ export default function DownloadButton({
               style={{
                 width: `${progress}%`,
                 height: "100%",
-                background:
-                  progress === 100
-                    ? "#79e6a4"
-                    : "var(--frost)",
-                transition:
-                  "width 0.3s ease",
+                background: progress === 100 ? "#79e6a4" : "var(--frost)",
+                transition: "width 0.3s ease",
               }}
             />
+          </div>
+
+          <div style={{ marginTop: "8px", display: "flex", justifyContent: "center" }}>
+            <span style={{ fontSize: "11px", color: "var(--frost)", fontWeight: 800 }}>⬇ {downloadCount.toLocaleString()} downloads</span>
           </div>
 
           <div
             style={{
               display: "flex",
-              justifyContent:
-                "space-between",
+              justifyContent: "space-between",
               marginTop: "8px",
               fontSize: "11px",
               color: "var(--muted)",
@@ -405,135 +350,51 @@ export default function DownloadButton({
             }}
           >
             <span>
-              {formatBytes(bytesReceived)} /{" "}
-              {bytesTotal
-                ? formatBytes(bytesTotal)
-                : "Unknown"}
+              {formatBytes(bytesReceived)} / {bytesTotal ? formatBytes(bytesTotal) : hasSize ? formatBytes(displaySize!) : "Unknown"}
             </span>
-            <span>
-              {fileName}
-            </span>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "50%" }}>{fileName}</span>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-              marginTop: "12px",
-              flexWrap: "wrap",
-            }}
-          >
+          <div style={{ display: "flex", gap: "8px", marginTop: "12px", flexWrap: "wrap" }}>
             {downloading && !paused && (
-              <button
-                type="button"
-                className="button-secondary"
-                onClick={handlePause}
-                style={{
-                  padding: "8px 14px",
-                  fontSize: "12px",
-                }}
-              >
+              <button type="button" className="button-secondary" onClick={handlePause} style={{ padding: "8px 14px", fontSize: "12px" }}>
                 Pause
               </button>
             )}
-
             {paused && (
-              <button
-                type="button"
-                className="button-primary"
-                onClick={handleResume}
-                style={{
-                  padding: "8px 14px",
-                  fontSize: "12px",
-                }}
-              >
+              <button type="button" className="button-primary" onClick={handleResume} style={{ padding: "8px 14px", fontSize: "12px" }}>
                 Resume
               </button>
             )}
-
             {(downloading || paused) && (
-              <button
-                type="button"
-                className="button-secondary"
-                onClick={handleCancel}
-                style={{
-                  padding: "8px 14px",
-                  fontSize: "12px",
-                }}
-              >
+              <button type="button" className="button-secondary" onClick={handleCancel} style={{ padding: "8px 14px", fontSize: "12px" }}>
                 Cancel
               </button>
             )}
-
             {progress === 100 && (
-              <button
-                type="button"
-                className="button-primary"
-                onClick={handleDownload}
-                style={{
-                  padding: "8px 14px",
-                  fontSize: "12px",
-                }}
-              >
+              <button type="button" className="button-primary" onClick={handleDownload} style={{ padding: "8px 14px", fontSize: "12px" }}>
                 Download Again
               </button>
             )}
-
-            <button
-              type="button"
-              className="button-secondary"
-              onClick={handleDirectDownload}
-              style={{
-                padding: "8px 14px",
-                fontSize: "12px",
-                marginLeft: "auto",
-              }}
-            >
-              Direct Link
-            </button>
           </div>
 
-          <p
-            style={{
-              marginTop: "10px",
-              fontSize: "11px",
-              color: "var(--muted)",
-              lineHeight: "1.5",
-            }}
-          >
-            Resumable download • Auto-resume on
-            failure • Supports Range requests
-            {paused &&
-              " • Paused - click Resume to continue from " +
-                formatBytes(bytesReceived)}
+          <p style={{ marginTop: "10px", fontSize: "11px", color: "var(--muted)", lineHeight: "1.5", textAlign: "center" }}>
+            {isExternal
+              ? "Proxied through this website • No new tab • File saved to device storage on finish • Supports Range/resume when host allows"
+              : "Resumable download • Auto-resume on failure • Supports Range requests"}
+            {paused && " • Paused - click Resume to continue from " + formatBytes(bytesReceived)}
           </p>
         </div>
       )}
 
-      {!downloading &&
-        !paused &&
-        progress === 0 && (
-          <p
-            style={{
-              marginTop: "10px",
-              fontSize: "11px",
-              color: "var(--muted)",
-              textAlign: "center",
-            }}
-          >
-            Resumable • Progress shown • Pause/Resume supported
-          </p>
-        )}
+      {!downloading && !paused && progress === 0 && (
+        <p style={{ marginTop: "10px", fontSize: "11px", color: "var(--muted)", textAlign: "center" }}>
+          {isExternal ? "One-click • On-site download • No redirect to external host" : "Resumable • Progress shown • Pause/Resume supported"}
+        </p>
+      )}
 
       {error && (
-        <p
-          className="admin-error"
-          style={{
-            marginTop: "12px",
-            whiteSpace: "pre-line",
-            fontSize: "12px",
-          }}
-        >
+        <p className="admin-error" style={{ marginTop: "12px", whiteSpace: "pre-line", fontSize: "12px" }}>
           {error}
         </p>
       )}

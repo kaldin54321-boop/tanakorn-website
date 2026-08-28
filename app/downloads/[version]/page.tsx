@@ -264,7 +264,6 @@ export default async function ReleasePage({
 
             {release.file_path ||
             (release as any).external_url ? (
-
               <>
                 <div>
 
@@ -301,33 +300,17 @@ export default async function ReleasePage({
                   )}
                 </div>
 
-                {(release as any).download_count !== null && (release as any).download_count !== undefined && (
-                  <div className="download-count-badge">
-                    <span>⬇</span> {(release as any).download_count.toLocaleString()} downloads
-                  </div>
-                )}
-
-                {(release as any).external_url ? (
-                  <a
-                    href={
-                      (release as any).external_url
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="download-button"
-                  >
-                    DOWNLOAD APK (External)
-                  </a>
-                ) : (
-                  <DownloadButton
-                    version={release.version}
-                    fileName={
-                      release.file_name ||
-                      `Winlator@Frost-${release.version}.apk`
-                    }
-                    fileSize={release.file_size}
-                  />
-                )}
+                <DownloadButton
+                  version={release.version}
+                  fileName={
+                    release.file_name ||
+                    `Winlator@Frost-${release.version}.apk`
+                  }
+                  fileSize={release.file_size}
+                  isExternal={!!(release as any).external_url}
+                  externalUrl={(release as any).external_url || undefined}
+                  initialDownloadCount={(release as any).download_count ?? 0}
+                />
 
                 <div className="view-release-support">
                   <p>Support Frost — Help keep it free</p>

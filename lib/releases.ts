@@ -24,6 +24,7 @@ export async function getPublicReleases() {
       file_type,
       visibility,
       external_url,
+      download_count,
       created_at
     `)
     .eq("visibility", "published")
@@ -70,6 +71,7 @@ export async function getLatestPublicRelease() {
       file_type,
       visibility,
       external_url,
+      download_count,
       created_at
     `)
     .eq("visibility", "published")

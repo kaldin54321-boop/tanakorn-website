@@ -4158,8 +4158,18 @@ textarea:focus-visible {
 
 @media (max-width: 800px) {
   .nav-hamburger { display: flex; }
-  .nav-links { display: none; }
-  .nav-links.nav-links-open { display: flex; }
+  .nav-links { display: none !important; }
+  /* Keep desktop nav-links hidden even when hamburger open - mobile uses .nav-mobile-panel only */
+  .nav-links.nav-links-open { display: none !important; }
+  .nav-mobile-panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 99;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+  }
+  .navbar { position: relative; }
 }
 
 .hero-support {

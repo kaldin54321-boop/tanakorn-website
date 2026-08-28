@@ -249,7 +249,7 @@ export default async function DownloadsPage() {
 
             <div className="release-download-area">
 
-              {latestRelease.file_path ? (
+              {(latestRelease.file_path || (latestRelease as any).external_url) ? (
 
                 <Link
                   href={
@@ -272,11 +272,12 @@ export default async function DownloadsPage() {
               )}
 
 
-              {latestRelease.file_path ? (
+              {(latestRelease.file_path || (latestRelease as any).external_url) ? (
 
                 <p>
                   View release information
                   and download the APK.
+                  {(latestRelease as any).download_count !== undefined && (latestRelease as any).download_count !== null ? ` • ⬇ ${(latestRelease as any).download_count.toLocaleString()} downloads` : ""}
                 </p>
 
               ) : (
@@ -376,7 +377,7 @@ export default async function DownloadsPage() {
                   </div>
 
 
-                  {release.file_path ? (
+                  {(release.file_path || (release as any).external_url) ? (
 
                     <Link
                       href={
@@ -396,6 +397,9 @@ export default async function DownloadsPage() {
                       APK UNAVAILABLE
                     </button>
 
+                  )}
+                  {(release as any).download_count !== undefined && (release as any).download_count !== null && (
+                    <p style={{ marginTop: "8px", fontSize: "11px", color: "var(--muted)", textAlign: "center" }}>⬇ {(release as any).download_count.toLocaleString()} downloads</p>
                   )}
 
                 </article>
