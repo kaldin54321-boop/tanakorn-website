@@ -87,9 +87,24 @@ export async function getAnalyticsStats() {
       .sort((a, b) => b.count - a.count);
   };
 
+  // Map country codes (e.g., US, TH) to full names via Intl.DisplayNames
+  function toFullCountryName(code: string): string {
+    if (!code || code === "Unknown") return "Unknown";
+    const trimmed = code.trim().toUpperCase();
+    if (trimmed.length !== 2) return code; // already full? keep as is
+    try {
+      const dn = new Intl.DisplayNames(["en"], { type: "region" });
+      const full = dn.of(trimmed);
+      return full || code;
+    } catch {
+      return code;
+    }
+  }
+
   const byBrowser = countBy("browser");
   const byOS = countBy("os");
-  const byCountry = countBy("country");
+  const byCountryRaw = countBy("country");
+  const byCountry = byCountryRaw.map(({ name, count }) => ({ name: toFullCountryName(name), count }));
   const topCountries = byCountry.slice(0, 20);
 
   return {

@@ -38,6 +38,30 @@ export const localeFlags: Record<Locale, string> = {
   ar: "🇸🇦",
 };
 
+// Static flag codes for flagcdn.com (regular rectangular flags)
+export const localeFlagCodes: Record<Locale, string> = {
+  en: "us",
+  de: "de",
+  fr: "fr",
+  it: "it",
+  es: "es",
+  ru: "ru",
+  tr: "tr",
+  ko: "kr",
+  ja: "jp",
+  zh: "cn",
+  vi: "vn",
+  th: "th",
+  id: "id",
+  pt: "pt",
+  ar: "sa",
+};
+
+export function flagUrl(locale: Locale, width: number = 40): string {
+  const code = localeFlagCodes[locale] || "un";
+  return `https://flagcdn.com/w${width}/${code}.png`;
+}
+
 // Map browser language codes to our locales
 export const languageToLocale: Record<string, Locale> = {
   en: "en",

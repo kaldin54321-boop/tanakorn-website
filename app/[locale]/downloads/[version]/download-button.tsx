@@ -72,10 +72,13 @@ export default function DownloadButton({
     }
     fetchInfo();
     fetchPublicCount();
-    const id = setInterval(fetchPublicCount, 5000);
+    const id = setInterval(fetchPublicCount, 3000);
+    const onVisible = () => { if (document.visibilityState === "visible") fetchPublicCount(); };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
       clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [version, initialFileName, fileSize]);
 
@@ -269,10 +272,10 @@ export default function DownloadButton({
           >
             {t.downloadApk}
           </button>
-          {/* Live download counts - always visible near/below Download APK button */}
+          {/* Live public download counts - counts all users who clicked Download APK at this release */}
           <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "4px", alignItems: "center" }}>
-            <span style={{ fontSize: "13px", fontWeight: 800, color: "var(--frost)", letterSpacing: "0.03em" }}>
-              ⬇ {downloadCount.toLocaleString()} {t.downloads}
+            <span style={{ fontSize: "13px", fontWeight: 800, color: "var(--frost)", letterSpacing: "0.03em", display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 7, height: 7, borderRadius: 999, background: "#22c55e", display: "inline-block", boxShadow: "0 0 8px #22c55e" }} /> ⬇ {downloadCount.toLocaleString()} {t.downloads} <span style={{ fontSize: 10, fontWeight: 600, color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)", padding: "1px 5px", borderRadius: 999 }}>LIVE</span>
             </span>
             <span style={{ fontSize: "11px", color: "var(--muted)", textAlign: "center" }}>
               {isExternal

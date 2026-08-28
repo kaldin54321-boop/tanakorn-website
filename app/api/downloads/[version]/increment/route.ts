@@ -12,7 +12,10 @@ export async function GET(request: Request, context: RouteContext) {
   const supabase = await createClient();
   const { data, error } = await supabase.from("releases").select("download_count").eq("version", version).maybeSingle();
   if (error || !data) return NextResponse.json({ success: false, message: "Release not found" }, { status: 404 });
-  return NextResponse.json({ success: true, download_count: (data as any).download_count ?? 0 }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json(
+    { success: true, download_count: (data as any).download_count ?? 0 },
+    { headers: { "Cache-Control": "no-store, no-cache, must-revalidate", Pragma: "no-cache" } }
+  );
 }
 
 export async function POST(request: Request, context: RouteContext) {
