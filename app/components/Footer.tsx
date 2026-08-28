@@ -1,6 +1,12 @@
 import Link from "next/link";
+import type { Locale } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
-export default function Footer() {
+type Props = { locale?: string; dict?: ReturnType<typeof getDictionary> };
+
+export default function Footer({ locale = "en", dict }: Props) {
+  const d = dict || getDictionary(locale);
+  const loc = (locale || "en") as Locale;
   return (
     <footer className="footer">
 
@@ -8,14 +14,13 @@ export default function Footer() {
 
         <div className="footer-brand">
 
-          <Link href="/" className="brand">
+          <Link href={`/${loc}`} className="brand">
             <span className="brand-icon">❄</span>
             WINLATOR<span className="brand-frost">@FROST</span>
           </Link>
 
           <p>
-            A customized Winlator experience
-            for Android.
+            {d.footer.customizedDesc}
           </p>
 
           <div className="footer-social">
@@ -47,53 +52,26 @@ export default function Footer() {
         <div className="footer-links">
 
           <div>
-            <h4>Project</h4>
-
-            <Link href="/news">
-              News
-            </Link>
-
-            <Link href="/downloads">
-              Downloads
-            </Link>
+            <h4>{d.footer.project}</h4>
+            <Link href={`/${loc}/news`}>{d.footer.news}</Link>
+            <Link href={`/${loc}/downloads`}>{d.footer.downloads}</Link>
           </div>
 
-
           <div>
-            <h4>Resources</h4>
-
-            <Link href="/news">
-              Updates
-            </Link>
-
-            <Link href="/downloads">
-              Releases
-            </Link>
+            <h4>{d.footer.resources}</h4>
+            <Link href={`/${loc}/news`}>{d.footer.updates}</Link>
+            <Link href={`/${loc}/downloads`}>{d.footer.releases}</Link>
           </div>
 
         </div>
 
       </div>
 
-
       <div className="footer-bottom footer-bottom-col">
-
-        <span>
-          Copyright © Frost Apps & Games Software Co., Ltd. 2023-2026.
-        </span>
-
-        <span>
-          บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569
-        </span>
-
-        <span>
-          All rights reserved.
-        </span>
-
-        <span className="footer-built">
-          Built with Frost ❄
-        </span>
-
+        <span>{d.footer.copyright}</span>
+        <span>{d.footer.thaiCompany}</span>
+        <span>{d.footer.allRights}</span>
+        <span className="footer-built">{d.footer.builtWith}</span>
       </div>
 
     </footer>

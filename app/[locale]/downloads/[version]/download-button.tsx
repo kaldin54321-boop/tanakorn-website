@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 type Props = {
   version: string;
@@ -9,6 +10,7 @@ type Props = {
   isExternal?: boolean;
   externalUrl?: string;
   initialDownloadCount?: number | null;
+  locale?: string;
 };
 
 function formatBytes(bytes: number) {
@@ -24,7 +26,10 @@ export default function DownloadButton({
   isExternal = false,
   externalUrl,
   initialDownloadCount = null,
+  locale = "en",
 }: Props) {
+  const dict = getDictionary(locale);
+  const t = dict.downloadButton;
   const [fileName, setFileName] = useState(initialFileName);
   const [downloading, setDownloading] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -38,7 +43,7 @@ export default function DownloadButton({
   const chunksRef = useRef<Blob[]>([]);
   const receivedRef = useRef(0);
 
-  // Fetch metadata + public download count polling
+  // Fetch external URL metadata (file name/size) on mount for display + public download count polling
   useEffect(() => {
     let cancelled = false;
     async function fetchInfo() {
@@ -262,21 +267,21 @@ export default function DownloadButton({
             className="download-button"
             style={{ width: "100%" }}
           >
-            DOWNLOAD APK
+            {t.downloadApk}
           </button>
           {/* Live download counts - always visible near/below Download APK button */}
           <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "4px", alignItems: "center" }}>
             <span style={{ fontSize: "13px", fontWeight: 800, color: "var(--frost)", letterSpacing: "0.03em" }}>
-              ⬇ {downloadCount.toLocaleString()} downloads
+              ⬇ {downloadCount.toLocaleString()} {t.downloads}
             </span>
             <span style={{ fontSize: "11px", color: "var(--muted)", textAlign: "center" }}>
               {isExternal
                 ? hasSize
-                  ? `External • ${formatBytes(displaySize!)}`
-                  : "External • Size detected on download"
+                  ? `${t.external} • ${formatBytes(displaySize!)}`
+                  : `${t.external} • ${t.sizeDetected}`
                 : hasSize
-                  ? `${formatBytes(displaySize!)} • resumable`
-                  : "Resumable download"}
+                  ? `${formatBytes(displaySize!)} • ${t.resumable}`
+                  : t.resumableDownload}
             </span>
           </div>
         </>
@@ -300,7 +305,7 @@ export default function DownloadButton({
               color: "var(--muted)",
             }}
           >
-            <span>{paused ? "Paused" : downloading ? "Downloading..." : progress === 100 ? "Completed" : "Ready"}</span>
+            <span>{paused ? t.paused : downloading ? t.downloading : progress === 100 ? t.completed : t.ready}</span>
             <span>{progress}%</span>
           </div>
 
@@ -324,7 +329,7 @@ export default function DownloadButton({
           </div>
 
           <div style={{ marginTop: "8px", display: "flex", justifyContent: "center" }}>
-            <span style={{ fontSize: "11px", color: "var(--frost)", fontWeight: 800 }}>⬇ {downloadCount.toLocaleString()} downloads</span>
+            <span style={{ fontSize: "11px", color: "var(--frost)", fontWeight: 800 }}>⬇ {downloadCount.toLocaleString()} {t.downloads}</span>
           </div>
 
           <div
@@ -338,7 +343,7 @@ export default function DownloadButton({
             }}
           >
             <span>
-              {formatBytes(bytesReceived)} / {bytesTotal ? formatBytes(bytesTotal) : hasSize ? formatBytes(displaySize!) : "Unknown"}
+              {formatBytes(bytesReceived)} / {bytesTotal ? formatBytes(bytesTotal) : hasSize ? formatBytes(displaySize!) : t.unknown}
             </span>
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "50%" }}>{fileName}</span>
           </div>
@@ -346,38 +351,36 @@ export default function DownloadButton({
           <div style={{ display: "flex", gap: "8px", marginTop: "12px", flexWrap: "wrap" }}>
             {downloading && !paused && (
               <button type="button" className="button-secondary" onClick={handlePause} style={{ padding: "8px 14px", fontSize: "12px" }}>
-                Pause
+                {t.pause}
               </button>
             )}
             {paused && (
               <button type="button" className="button-primary" onClick={handleResume} style={{ padding: "8px 14px", fontSize: "12px" }}>
-                Resume
+                {t.resume}
               </button>
             )}
             {(downloading || paused) && (
               <button type="button" className="button-secondary" onClick={handleCancel} style={{ padding: "8px 14px", fontSize: "12px" }}>
-                Cancel
+                {t.cancel}
               </button>
             )}
             {progress === 100 && (
               <button type="button" className="button-primary" onClick={handleDownload} style={{ padding: "8px 14px", fontSize: "12px" }}>
-                Download Again
+                {t.downloadAgain}
               </button>
             )}
           </div>
 
           <p style={{ marginTop: "10px", fontSize: "11px", color: "var(--muted)", lineHeight: "1.5", textAlign: "center" }}>
-            {isExternal
-              ? "Proxied through this website • No new tab • File saved to device storage on finish • Supports Range/resume when host allows"
-              : "Resumable download • Auto-resume on failure • Supports Range requests"}
-            {paused && " • Paused - click Resume to continue from " + formatBytes(bytesReceived)}
+            {isExternal ? t.proxiedDesc : t.resumableShort}
+            {paused && ` • ${t.paused} - ${t.resume} ${formatBytes(bytesReceived)}`}
           </p>
         </div>
       )}
 
       {!downloading && !paused && progress === 0 && (
         <p style={{ marginTop: "10px", fontSize: "11px", color: "var(--muted)", textAlign: "center" }}>
-          {isExternal ? "One-click • On-site download • No redirect to external host" : "Resumable • Progress shown • Pause/Resume supported"}
+          {isExternal ? t.oneClickDesc : t.resumableDesc}
         </p>
       )}
 

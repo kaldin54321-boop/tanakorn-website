@@ -1,20 +1,23 @@
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 import ViewTracker from "./components/ViewTracker";
 import "./globals.css";
+import { cookies, headers } from "next/headers";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const h = await headers();
+  const cookieLocale = cookieStore.get("NEXT_LOCALE")?.value;
+  const headerLocale = h.get("x-locale");
+  const locale = headerLocale || cookieLocale || "en";
+  const isRTL = locale === "ar";
   return (
-    <html lang="en">
+    <html lang={locale} dir={isRTL ? "rtl" : "ltr"}>
       <body>
-        <Navbar />
         <ViewTracker />
         {children}
-        <Footer />
       </body>
     </html>
   );
