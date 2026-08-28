@@ -279,25 +279,7 @@ export default async function ReleasePage({
                     {formatFileSize(
                       release.file_size
                     )}
-                    {(release as any).external_url
-                      ? " • External"
-                      : ""}
                   </p>
-
-                  {(release as any)
-                    .external_url && (
-                    <p
-                      style={{
-                        fontSize: "11px",
-                        color: "var(--muted)",
-                        wordBreak: "break-all",
-                        marginTop: "6px",
-                      }}
-                    >
-                      External:{" "}
-                      {(release as any).external_url}
-                    </p>
-                  )}
                 </div>
 
                 <DownloadButton

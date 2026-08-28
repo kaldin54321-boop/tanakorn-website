@@ -65,10 +65,7 @@ export default async function ReleasePage({ params }: { params: Promise<{ locale
               <>
                 <div>
                   <strong>{release.file_name || `Winlator@Frost ${release.version}.apk`}</strong>
-                  <p>APK • {release.architecture} • {formatFileSize(release.file_size, dict)}{(release as any).external_url ? ` • ${dict.common.external}` : ""}</p>
-                  {(release as any).external_url && (
-                    <p style={{ fontSize:"11px", color:"var(--muted)", wordBreak:"break-all", marginTop:"6px"}}>{dict.common.external}: {(release as any).external_url}</p>
-                  )}
+                  <p>APK • {release.architecture} • {formatFileSize(release.file_size, dict)}</p>
                 </div>
                 <DownloadButton version={release.version} fileName={release.file_name || `Winlator@Frost-${release.version}.apk`} fileSize={release.file_size} isExternal={!!(release as any).external_url} externalUrl={(release as any).external_url || undefined} initialDownloadCount={(release as any).download_count ?? 0} locale={locale} />
                 <div className="view-release-support">
