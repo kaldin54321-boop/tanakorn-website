@@ -310,38 +310,95 @@ export async function GET(
       if (release.external_url) {
         try {
           const resolved = await resolveExternalUrl(release.external_url);
-          // Try HEAD to get size/name without full download
           let fileName = release.file_name || `Winlator@Frost-${release.version}.apk`;
           let fileSize: number | null = release.file_size;
+
+          // Helper to extract size from response headers
+          const extractSize = (res: Response | null): number | null => {
+            if (!res) return null;
+            const cr = res.headers.get("Content-Range");
+            if (cr) {
+              const m = cr.match(/\/(\d+)\s*$/);
+              if (m) return parseInt(m[1], 10);
+            }
+            const cl = res.headers.get("Content-Length");
+            if (cl) {
+              // For Range 0-0, cl is 1, but total is in Content-Range; already handled
+              // For HEAD, cl is total
+              const parsed = parseInt(cl, 10);
+              if (!isNaN(parsed) && parsed > 1) return parsed;
+              // If cl is 1 and we have no cr, keep null (will try other method)
+              if (parsed > 0) return parsed;
+            }
+            return null;
+          };
+
           try {
             const ctrl = new AbortController();
-            const tid = setTimeout(() => ctrl.abort(), 10000);
-            // Try HEAD first, fallback to_range GET on failure (some hosts block HEAD)
+            const tid = setTimeout(() => ctrl.abort(), 12000);
+
             let headRes: Response | null = null;
+            let headTextForConfirm: string | null = null;
+
             try {
               headRes = await fetch(resolved.directUrl, { method: "HEAD", headers: { "User-Agent": "Mozilla/5.0" }, signal: ctrl.signal, redirect: "follow" });
+              // Google Drive large files return HTML on HEAD - detect and need to fetch confirm page
+              const ct = headRes.headers.get("Content-Type") || "";
+              const cd = headRes.headers.get("Content-Disposition") || "";
+              if (ct.includes("text/html") && !cd.includes("attachment") && resolved.provider === "google_drive") {
+                // Need to fetch HTML to get confirm token - do GET for confirm
+                try {
+                  const htmlRes = await fetch(resolved.directUrl, { headers: { "User-Agent": "Mozilla/5.0" }, signal: ctrl.signal, redirect: "follow" });
+                  const html = await htmlRes.text();
+                  headTextForConfirm = html;
+                  const m = html.match(/href="([^"]*export=download[^"]*confirm=[^"]*)"/i);
+                  if (m) {
+                    const confirmUrl = m[1].replace(/&amp;/g, "&");
+                    const abs = confirmUrl.startsWith("http") ? confirmUrl : `https://drive.google.com${confirmUrl}`;
+                    const cr = await fetch(abs, { method: "HEAD", headers: { "User-Agent": "Mozilla/5.0" }, signal: ctrl.signal, redirect: "follow" });
+                    if (cr && (cr.ok || cr.status === 206)) headRes = cr;
+                    else {
+                      const rangeRes = await fetch(abs, { headers: { Range: "bytes=0-0", "User-Agent": "Mozilla/5.0" }, signal: ctrl.signal, redirect: "follow" });
+                      if (rangeRes && (rangeRes.ok || rangeRes.status === 206)) headRes = rangeRes;
+                    }
+                  } else {
+                    // Try direct Range on original for size even if HTML
+                    const rangeRes = await fetch(resolved.directUrl, { headers: { Range: "bytes=0-0", "User-Agent": "Mozilla/5.0" }, signal: ctrl.signal, redirect: "follow" });
+                    if (rangeRes && (rangeRes.ok || rangeRes.status === 206)) headRes = rangeRes;
+                  }
+                } catch {}
+              }
             } catch {}
-            if (!headRes || !headRes.ok) {
-              // Fallback: GET with range 0-0
-              headRes = await fetch(resolved.directUrl, { headers: { Range: "bytes=0-0", "User-Agent": "Mozilla/5.0" }, signal: ctrl.signal, redirect: "follow" });
+
+            // Fallback to Range 0-0 if HEAD failed or returned HTML without size
+            let needRangeFallback = !headRes || !headRes.ok;
+            if (headRes) {
+              const ct = headRes.headers.get("Content-Type") || "";
+              const cd = headRes.headers.get("Content-Disposition") || "";
+              const hasSize = extractSize(headRes) !== null;
+              if (ct.includes("text/html") && !cd.includes("attachment") && !hasSize) needRangeFallback = true;
             }
+            if (needRangeFallback) {
+              try {
+                const rangeRes = await fetch(resolved.directUrl, { headers: { Range: "bytes=0-0", "User-Agent": "Mozilla/5.0" }, signal: ctrl.signal, redirect: "follow" });
+                if (rangeRes && (rangeRes.ok || rangeRes.status === 206)) headRes = rangeRes;
+              } catch {}
+            }
+
             clearTimeout(tid);
+
             if (headRes && (headRes.ok || headRes.status === 206)) {
               const cd = headRes.headers.get("Content-Disposition");
-              const cl = headRes.headers.get("Content-Length");
-              const cr = headRes.headers.get("Content-Range");
               const ct = headRes.headers.get("Content-Type") || "";
-              // If HTML returned, not a direct file
-              if (!ct.includes("text/html") || cd?.includes("attachment")) {
+              // Only use if not HTML or has attachment (real file)
+              const isHtml = ct.includes("text/html") && !(cd && cd.includes("attachment"));
+              if (!isHtml) {
                 fileName = parseFileNameFromHeaders(cd, ct, resolved.directUrl, fileName);
-                if (cr) {
-                  const m = cr.match(/\/(\d+)$/);
-                  if (m) fileSize = parseInt(m[1], 10);
-                } else if (cl) {
-                  // For range 0-0, content-length is 1, but content-range has total
-                  const total = headRes.headers.get("Content-Range")?.match(/\/(\d+)/)?.[1];
-                  fileSize = total ? parseInt(total, 10) : parseInt(cl, 10);
-                }
+                const sz = extractSize(headRes);
+                if (sz !== null && sz > 0) fileSize = sz;
+              } else if (headTextForConfirm) {
+                // For Google Drive HTML case where we didn't get size, try to parse size from HTML if available
+                // Keep fileSize as is (null) - download will still provide size via proxy
               }
             }
           } catch {}

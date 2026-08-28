@@ -275,10 +275,9 @@ export default async function ReleasePage({
                   <p>
                     APK •{" "}
                     {release.architecture}
-                    {" • "}
-                    {formatFileSize(
-                      release.file_size
-                    )}
+                    {release.file_size !== null
+                      ? ` • ${formatFileSize(release.file_size)}`
+                      : ""}
                   </p>
                 </div>
 

@@ -117,6 +117,7 @@ export default function DownloadButton({
         {
           headers,
           signal: controller.signal,
+          cache: "no-store",
         }
       );
 
@@ -141,13 +142,16 @@ export default function DownloadButton({
           if (extracted && extracted !== fileName) setFileName(extracted);
         }
       }
-      let total = bytesTotal;
+      let total: number | null = bytesTotal ?? fileSize;
       if (contentRange) {
         const m = contentRange.match(/bytes \d+-\d+\/(\d+)/);
         if (m) total = parseInt(m[1], 10);
       } else if (contentLength) {
-        total = parseInt(contentLength, 10) + resumeFrom;
+        const parsed = parseInt(contentLength, 10);
+        if (!isNaN(parsed) && parsed > 0) total = parsed + resumeFrom;
       }
+      // Fallback to bytesTotal from info if headers didn't provide total
+      if (!total && bytesTotal) total = bytesTotal;
       if (total && total > 0) setBytesTotal(total);
 
       const reader = res.body?.getReader();
@@ -167,13 +171,12 @@ export default function DownloadButton({
           receivedRef.current = received;
           chunksRef.current = chunks;
           setBytesReceived(received);
-          const t = total || fileSize;
+          const t = total ?? fileSize ?? bytesTotal;
           if (t && t > 0) {
-            setProgress(Math.round((received / t) * 100));
-            setBytesTotal(t);
-          } else if (received > 0) {
-            // For unknown total, show bytes but not percent
-            setBytesReceived(received);
+            const pct = Math.min(100, Math.round((received / t) * 100));
+            setProgress(pct);
+            // Keep bytesTotal in sync with progress total
+            if (!bytesTotal || bytesTotal !== t) setBytesTotal(t);
           }
         }
       }
