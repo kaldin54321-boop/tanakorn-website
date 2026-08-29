@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getPublicNews } from "@/lib/news";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { locales } from "@/lib/i18n/config";
+import { parseNewsContent } from "@/lib/news-helpers";
 
 export async function generateStaticParams() {
   try {
@@ -44,8 +45,26 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ lo
         <div><span>{article.category || dict.news.general}</span><small>{formatNewsDate(article.published_at || article.created_at, locale)}</small></div>
         <h1>{article.title}</h1>
       </header>
+      {article.image_url && (
+        <div style={{ marginTop: 24, borderRadius: 16, overflow: "hidden", border: "1px solid var(--border)" }}>
+          <img src={article.image_url} alt={article.title} style={{ width: "100%", height: "auto", maxHeight: 520, objectFit: "cover", display: "block" }} />
+        </div>
+      )}
       <article className="article-body">
-        {article.content.split("\n").map((paragraph, index)=> !paragraph.trim() ? null : <p key={index}>{paragraph}</p>)}
+        {(() => {
+          const blocks = parseNewsContent(article.content);
+          return blocks.map((block, idx) => (
+            <div key={idx} style={{ marginBottom: block.imageUrl ? 28 : undefined }}>
+              {block.text && <p>{block.text}</p>}
+              {block.imageUrl && (
+                <figure style={{ margin: block.text ? "16px 0 0" : "0", borderRadius: 12, overflow: "hidden", border: "1px solid var(--border)" }}>
+                  <img src={block.imageUrl} alt={block.imageAlt || `Image ${idx + 1}`} style={{ width: "100%", height: "auto", display: "block" }} loading="lazy" />
+                  {block.imageAlt && <figcaption style={{ padding: "8px 12px", fontSize: 12, color: "var(--muted)", textAlign: "center", background: "rgba(255,255,255,0.02)" }}>{block.imageAlt}</figcaption>}
+                </figure>
+              )}
+            </div>
+          ));
+        })()}
       </article>
       <div style={{ marginTop:"60px", paddingTop:"30px", borderTop:"1px solid var(--border)"}}>
         <Link href={`/${locale}/news`} className="button-secondary">{dict.news.backToNewsArrow}</Link>

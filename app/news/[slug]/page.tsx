@@ -4,6 +4,8 @@ import {
   getPublicNews,
 } from "@/lib/news";
 
+import { parseNewsContent } from "@/lib/news-helpers";
+
 export async function generateStaticParams() {
   // For Cloudflare Pages static export (CF_PAGES=1), pre-generate existing slugs at build time
   // For dynamic runtime (standalone), this is ignored due to force-dynamic
@@ -175,6 +177,13 @@ export default async function NewsArticlePage({
 
       </header>
 
+      {/* Cover image (optional) */}
+      {article.image_url && (
+        <div style={{ marginTop: 24, borderRadius: 16, overflow: "hidden", border: "1px solid var(--border)" }}>
+          <img src={article.image_url} alt={article.title} style={{ width: "100%", height: "auto", maxHeight: 520, objectFit: "cover", display: "block" }} />
+        </div>
+      )}
+
 
       {/* ====================================== */}
       {/* ARTICLE CONTENT                        */}
@@ -182,25 +191,20 @@ export default async function NewsArticlePage({
 
       <article className="article-body">
 
-        {article.content
-          .split("\n")
-          .map(
-            (paragraph, index) => {
-
-              if (
-                !paragraph.trim()
-              ) {
-                return null;
-              }
-
-
-              return (
-                <p key={index}>
-                  {paragraph}
-                </p>
-              );
-            }
-          )}
+        {(() => {
+          const blocks = parseNewsContent(article.content);
+          return blocks.map((block, idx) => (
+            <div key={idx} style={{ marginBottom: block.imageUrl ? 28 : undefined }}>
+              {block.text && <p>{block.text}</p>}
+              {block.imageUrl && (
+                <figure style={{ margin: block.text ? "16px 0 0" : "0", borderRadius: 12, overflow: "hidden", border: "1px solid var(--border)" }}>
+                  <img src={block.imageUrl} alt={block.imageAlt || `Image ${idx + 1}`} style={{ width: "100%", height: "auto", display: "block" }} loading="lazy" />
+                  {block.imageAlt && <figcaption style={{ padding: "8px 12px", fontSize: 12, color: "var(--muted)", textAlign: "center", background: "rgba(255,255,255,0.02)" }}>{block.imageAlt}</figcaption>}
+                </figure>
+              )}
+            </div>
+          ));
+        })()}
 
       </article>
 

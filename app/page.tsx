@@ -321,10 +321,12 @@ export default async function Home() {
           className="news-card"
         >
 
-          <div className="news-image">
-            {(article.category || "NEWS")
-              .toUpperCase()
-              .slice(0, 12)}
+          <div className="news-image" style={article.image_url ? { padding: 0, overflow: "hidden" } as React.CSSProperties : undefined}>
+            {article.image_url ? (
+              <img src={article.image_url} alt={article.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} loading="lazy" />
+            ) : (
+              (article.category || "NEWS").toUpperCase().slice(0, 12)
+            )}
           </div>
 
           <div className="news-content">

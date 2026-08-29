@@ -38,7 +38,13 @@ export default async function NewsPage({ params }: { params: Promise<{ locale: s
         <section className="news-list">
           {news.map((article) => (
             <article key={article.id} className="news-list-card">
-              <div className="news-list-image">NEWS</div>
+              <div className="news-list-image" style={article.image_url ? { padding: 0, overflow: "hidden" } as React.CSSProperties : undefined}>
+                {article.image_url ? (
+                  <img src={article.image_url} alt={article.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} loading="lazy" />
+                ) : (
+                  "NEWS"
+                )}
+              </div>
               <div className="news-list-content">
                 <div className="news-meta">
                   <span>{article.category || dict.news.general}</span>
