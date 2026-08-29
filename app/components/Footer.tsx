@@ -69,7 +69,10 @@ export default function Footer({ locale = "en", dict }: Props) {
 
       <div className="footer-bottom footer-bottom-col">
         <span>{d.footer.copyright}</span>
-        <span>{d.footer.thaiCompany}</span>
+        <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center", lineHeight: 1.5 }}>
+          <span>{d.footer.thaiCompany}</span>
+          <span>{d.footer.thaiAddress}</span>
+        </span>
         <span>{d.footer.allRights}</span>
         <span className="footer-built">{d.footer.builtWith}</span>
       </div>
