@@ -77,7 +77,7 @@ export default async function Home() {
           </h1>
 
           <p className="hero-description">
-            A customized Winlator experience built for
+            An advanced customized Winlator experience built for
             performance, flexibility and advanced
             Windows application support on Android.
           </p>
@@ -197,7 +197,7 @@ export default async function Home() {
       <section className="features-section">
 
   <div className="section-heading">
-    <p>WHY FROST</p>
+    <p>WHY NEED TO USE FROST</p>
     <h2>Built Different</h2>
   </div>
 
@@ -222,7 +222,9 @@ export default async function Home() {
 
       <p>
         Run supported Windows applications and games
-        through a customized Wine environment.
+        through a customized Wine environment. There are
+        many supported Windows applications and even
+        AAA games that are playable in this Winlator mod
       </p>
     </div>
 
@@ -244,7 +246,8 @@ export default async function Home() {
 
       <p>
         A customized Winlator experience with
-        additional features and improvements.
+        additional features and improvements
+        that enhance usability and performance.
       </p>
     </div>
 
@@ -419,12 +422,37 @@ export default async function Home() {
 
     <details className="faq-card">
       <summary>Is Winlator@Frost free?</summary>
-      <p>The Winlator@Frost are 100% free until forever and the downloads are through this website</p>
+      <p>The Winlator@Frost are 100% free until forever and the downloads are only through this website</p>
     </details>
 
     <details className="faq-card">
       <summary>Who developed the Winlator@Frost?</summary>
       <p>Winlator@Frost are being developed by a solo developer which is Tanakorn Phetsuan who are from Thailand, he is the only lead developer of the Winlator@Frost since 2024 after his cousin passed the project to him. Originally it was made by PhryaNik, from the initial release in late 2023 until mid 2024 and after that the project have been fully hold by Tanakorn until today</p>
+    </details>
+
+    <details className="faq-card">
+      <summary>Is Winlator@Frost safe to use?</summary>
+      <p>Yes, the Winlator@Frost are 100% safe to use and it&apos;s free from any malware or virus, but you should always download the Winlator@Frost from this official website only</p>
+    </details>
+
+    <details className="faq-card">
+      <summary>Is Winlator@Frost support all Android devices?</summary>
+      <p>Winlator@Frost are support most of Android devices but it&apos;s not guaranteed to work on all Android devices, so you should check the requirements before downloading and installing the Winlator@Frost</p>
+    </details>
+
+    <details className="faq-card">
+      <summary>Is Winlator@Frost support all Windows applications?</summary>
+      <p>For now, the Winlator@Frost are mostly support many of Windows applications but it&apos;s not guaranteed that all of Windows applications and games are supported and should be working. Because some of apps and games need a specific environment and configuration to run properly.</p>
+    </details>
+
+    <details className="faq-card">
+      <summary>How can I install and setup the Winlator@Frost?</summary>
+      <p>You can download the latest version of Winlator@Frost from our official website. Simply click on the download button and wait until the download is complete and then open the downloaded apk file with installer to install it. After that, open the app and you should follow the first-time setup wizard to complete the setup.</p>
+    </details>
+
+    <details className="faq-card">
+      <summary>Where can I report issues for Winlator@Frost?</summary>
+      <p>If you need any support or have any questions and wanting to report issues about Winlator@Frost, you can simply by joining our community on Discord to get help from other users and developers.</p>
     </details>
 
   </div>
@@ -438,7 +466,10 @@ export default async function Home() {
     <p>READY TO EXPERIENCE FROST?</p>
 
     <h2>
-      Take Windows with you.
+      Take Windows emulator with you
+      at anytime, anywhere, on your Android device.
+      All of Windows applications and games are 
+      now in your pocket.
     </h2>
 
     <p>

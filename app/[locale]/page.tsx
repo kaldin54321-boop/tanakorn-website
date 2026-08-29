@@ -138,6 +138,11 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <details className="faq-card"><summary>{dict.home.faqQ2}</summary><p>{dict.home.faqA2}</p></details>
           <details className="faq-card"><summary>{dict.home.faqQ3}</summary><p>{dict.home.faqA3}</p></details>
           <details className="faq-card"><summary>{dict.home.faqQ4}</summary><p>{dict.home.faqA4}</p></details>
+          <details className="faq-card"><summary>{dict.home.faqQ5}</summary><p>{dict.home.faqA5}</p></details>
+          <details className="faq-card"><summary>{dict.home.faqQ6}</summary><p>{dict.home.faqA6}</p></details>
+          <details className="faq-card"><summary>{dict.home.faqQ7}</summary><p>{dict.home.faqA7}</p></details>
+          <details className="faq-card"><summary>{dict.home.faqQ8}</summary><p>{dict.home.faqA8}</p></details>
+          <details className="faq-card"><summary>{dict.home.faqQ9}</summary><p>{dict.home.faqA9}</p></details>
         </div>
       </section>
 
