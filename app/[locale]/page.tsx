@@ -148,7 +148,10 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
 
       <section className="cta-section">
         <div className="cta-card">
-          <p>{dict.home.ctaReady}</p><h2>{dict.home.ctaTitle}</h2><p>{dict.home.ctaDesc}</p>
+          <p>{dict.home.ctaReady}</p>
+          <h2>{dict.home.ctaTitle}</h2>
+          <p className="cta-subtitle">{dict.home.ctaSubtitle}</p>
+          <p>{dict.home.ctaDesc}</p>
           <Link href={latestRelease ? `/${loc}/downloads/${latestRelease.version}` : `/${loc}/downloads`} className="button-primary">{dict.home.ctaDownload}</Link>
         </div>
       </section>

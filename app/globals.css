@@ -729,11 +729,26 @@ body {
 }
 
 .cta-card h2 {
-  margin: 14px 0;
+  margin: 14px 0 0;
 
   font-size: clamp(32px, 5vw, 52px);
 
   letter-spacing: -0.04em;
+}
+
+.cta-subtitle {
+  max-width: 620px;
+  margin: 14px auto 0;
+  color: var(--foreground);
+  opacity: 0.88;
+  font-size: clamp(16px, 2.2vw, 22px);
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+}
+
+.cta-card .cta-subtitle + p {
+  margin-top: 16px;
 }
 
 .cta-card p {

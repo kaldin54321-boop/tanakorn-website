@@ -467,10 +467,13 @@ export default async function Home() {
 
     <h2>
       Take Windows emulator with you
-      at anytime, anywhere, on your Android device.
-      All of Windows applications and games are 
-      now in your pocket.
     </h2>
+
+    <p className="cta-subtitle">
+      at anytime, anywhere, on your Android device.
+      All of Windows applications and games are
+      now in your pocket.
+    </p>
 
     <p>
       Download the latest Winlator@Frost
