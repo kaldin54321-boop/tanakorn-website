@@ -65,175 +65,19 @@ async function proxyExternalUrl(
   const isMediaFireShare = externalUrl.includes("mediafire.com/file/") || externalUrl.includes("mediafire.com/view/");
   const isMediaFireDirect = externalUrl.includes("download") && externalUrl.includes("mediafire.com");
   const isMediaFireAny = externalUrl.includes("mediafire.com");
-  // On Cloudflare, MediaFire is blocked - directly use Render proxy for on-site download with fresh direct link
-  // This bypasses Workers IP block and uses Render Node (not blocked) to resolve share -> direct and stream
+  // On Cloudflare, MediaFire is blocked on Workers IP and large file proxy via Workers double-stream causes 1102 CPU error
+  // Fix: redirect to Render proxy-file directly - client fetch follows 302 and streams from Render with progress bar, no Workers double-proxy, no HTML error
+  // This keeps download on-site (via Render, not MediaFire directly) and prevents direct link sharing, with fresh direct link resolved at download time
   if (isCloudflare && isMediaFireAny) {
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const renderProxyUrl = `https://tanakorn-website.onrender.com/api/proxy-file?url=${encodeURIComponent(externalUrl)}&filename=${encodeURIComponent(fileName)}`;
-        const rController = new AbortController();
-        const rTid = setTimeout(() => rController.abort(), 90000);
-        const rHeaders: Record<string, string> = {};
-        if (range) rHeaders["Range"] = range;
-        const rRes = await fetch(renderProxyUrl, { headers: rHeaders, signal: rController.signal } as any);
-        clearTimeout(rTid);
-        if (rRes.ok || rRes.status === 206) {
-          const ct = rRes.headers.get("Content-Type") || "";
-          if (ct.includes("application/json")) {
-            const j = await rRes.clone().json().catch(() => null);
-            if (j && j.success === false && attempt < 2) {
-              await new Promise((r) => setTimeout(r, attempt === 0 ? 5000 : 10000));
-              continue;
-            }
-          } else {
-            const contentLength = rRes.headers.get("Content-Length");
-            const contentRange = rRes.headers.get("Content-Range");
-            const contentType = rRes.headers.get("Content-Type") || fileType || "application/vnd.android.package-archive";
-            const responseHeaders: Record<string, string> = {
-              "Content-Type": contentType,
-              "Content-Disposition": `attachment; filename="${fileName}"`,
-              "Accept-Ranges": "bytes",
-              "Cache-Control": "no-store",
-              "X-Proxied-Via": "render-mediafire-direct",
-            };
-            if (contentLength) responseHeaders["Content-Length"] = contentLength;
-            if (contentRange) responseHeaders["Content-Range"] = contentRange;
-            const reader = rRes.body?.getReader();
-            if (reader) {
-              const webStream = new ReadableStream({
-                async start(controller) {
-                  try {
-                    while (true) {
-                      const { done, value } = await reader.read();
-                      if (done) break;
-                      if (value) controller.enqueue(value);
-                    }
-                    controller.close();
-                  } catch (err) {
-                    controller.error(err);
-                  }
-                },
-                cancel() { reader.cancel(); },
-              });
-              return new Response(webStream, { status: rRes.status === 206 ? 206 : 200, headers: responseHeaders });
-            }
-          }
-        } else if (rRes.status === 502 || rRes.status === 503 || rRes.status === 504) {
-          if (attempt < 2) {
-            await new Promise((r) => setTimeout(r, attempt === 0 ? 5000 : 10000));
-            continue;
-          }
-        }
-      } catch (e) {
-        if (attempt < 2) {
-          await new Promise((r) => setTimeout(r, 5000));
-          continue;
-        }
-      }
-    }
-    // If Render proxy still fails, fall through to normal Workers handling (will try to resolve on Workers, may still return HTML error)
-    // But we have already tried Render, so if still failing, the error below will be shown
+    const renderProxyUrl = `https://tanakorn-website.onrender.com/api/proxy-file?url=${encodeURIComponent(externalUrl)}&filename=${encodeURIComponent(fileName)}`;
+    // Preserve Range for resume - redirect will be followed by client's fetch which will re-send Range to Render
+    return NextResponse.redirect(renderProxyUrl, 302);
   }
   // Resolve third-party URL to direct link (Google Drive, MediaFire, Dropbox, etc.) for non-MediaFire or non-Cloudflare
+  // (MediaFire on Cloudflare already handled above via Render redirect to avoid 1102 double-proxy)
   let resolved = await resolveExternalUrl(externalUrl);
   let directUrl = resolved.directUrl;
-  // For any remaining MediaFire URL on Cloudflare that wasn't handled above (e.g., direct download* that still blocked), try Render proxy as fallback
-  const shouldUseRenderForMediaFire = isCloudflare && isMediaFireAny;
-  if (shouldUseRenderForMediaFire) {
-    // Try Render proxy-file with retries (Render free tier sleeps, needs 30-60s wake, use 90s timeout)
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const renderProxyUrl = `https://tanakorn-website.onrender.com/api/proxy-file?url=${encodeURIComponent(externalUrl)}&filename=${encodeURIComponent(fileName)}`;
-        const rController = new AbortController();
-        const rTid = setTimeout(() => rController.abort(), 90000);
-        const rHeaders: Record<string, string> = {};
-        if (range) rHeaders["Range"] = range;
-        const rRes = await fetch(renderProxyUrl, {
-          headers: rHeaders,
-          signal: rController.signal,
-        } as any);
-        clearTimeout(rTid);
-        if (rRes.ok || rRes.status === 206) {
-          const contentLength = rRes.headers.get("Content-Length");
-          const contentRange = rRes.headers.get("Content-Range");
-          const contentType = rRes.headers.get("Content-Type") || fileType || "application/vnd.android.package-archive";
-          // If Render returned JSON error (e.g., still waking or failed to resolve), retry
-          if (contentType.includes("application/json")) {
-            const j = await rRes.clone().json().catch(() => null);
-            if (j && j.success === false && attempt < 2) {
-              const delay = attempt === 0 ? 4000 : 8000;
-              console.warn(`Render proxy-file returned error for MediaFire, retrying after ${delay}ms:`, j?.message);
-              await new Promise((r) => setTimeout(r, delay));
-              continue;
-            }
-            // If still error after retries, throw to trigger HTML error handling below (will show direct link message)
-            if (j && j.success === false) {
-              throw new Error(j.message || "Render proxy failed to fetch MediaFire file");
-            }
-          }
-          const responseHeaders: Record<string, string> = {
-            "Content-Type": contentType,
-            "Content-Disposition": `attachment; filename="${fileName}"`,
-            "Accept-Ranges": "bytes",
-            "Cache-Control": "no-store",
-            "X-Proxied-Via": "render-mediafire",
-          };
-          if (contentLength) responseHeaders["Content-Length"] = contentLength;
-          if (contentRange) responseHeaders["Content-Range"] = contentRange;
-          const reader = rRes.body?.getReader();
-          if (!reader) throw new Error("No readable stream from Render proxy");
-          const webStream = new ReadableStream({
-            async start(controller) {
-              try {
-                while (true) {
-                  const { done, value } = await reader.read();
-                  if (done) break;
-                  if (value) controller.enqueue(value);
-                }
-                controller.close();
-              } catch (err) {
-                controller.error(err);
-              }
-            },
-            cancel() {
-              reader.cancel();
-            },
-          });
-          return new Response(webStream, {
-            status: rRes.status === 206 ? 206 : 200,
-            headers: responseHeaders,
-          });
-        } else if (rRes.status === 502 || rRes.status === 503 || rRes.status === 504) {
-          // Render may be waking (502/503/504), retry with increasing delay
-          if (attempt < 2) {
-            const delay = attempt === 0 ? 5000 : 10000;
-            console.warn(`Render proxy-file for MediaFire returned ${rRes.status}, retrying after ${delay}ms`);
-            await new Promise((r) => setTimeout(r, delay));
-            continue;
-          }
-        } else if (!rRes.ok) {
-          const txt = await rRes.text().catch(() => "");
-          console.warn(`Render proxy-file for MediaFire returned ${rRes.status}: ${txt.slice(0, 200)}`);
-          if (attempt < 2) {
-            await new Promise((r) => setTimeout(r, 3000));
-            continue;
-          }
-        }
-      } catch (e) {
-        console.warn(`Render proxy-file for MediaFire attempt ${attempt + 1} failed, ${attempt < 2 ? "retrying" : "falling back"}:`, e);
-        if (attempt < 2) {
-          const delay = attempt === 0 ? 5000 : 10000;
-          await new Promise((r) => setTimeout(r, delay));
-          continue;
-        }
-      }
-    }
-    console.warn("Render proxy-file for MediaFire failed after 3 attempts, falling back to normal Workers resolve (may return HTML error)");
-  }
-  // resolved/directUrl already declared above for Cloudflare MediaFire handling
-  // For other providers or non-Cloudflare, ensure directUrl is set (already done)
 
-  // Mega.nz cannot be proxied server-side reliably
   if (resolved.provider === "mega") {
     throw new Error(
       "Mega.nz links require opening externally (mega requires decryption in browser). Please use a direct host like Google Drive (share link), MediaFire direct, R2/S3, or GitHub Releases."
