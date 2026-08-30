@@ -160,6 +160,10 @@ export async function GET(request: Request) {
       "Content-Disposition": contentDisposition,
       "Accept-Ranges": "bytes",
       "Cache-Control": "no-store",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+      "Access-Control-Allow-Headers": "Range, Content-Type, Accept, Accept-Language, Referer, User-Agent",
+      "Access-Control-Expose-Headers": "Content-Length, Content-Range, Content-Disposition, Accept-Ranges",
     };
     if (contentLength) responseHeaders["Content-Length"] = contentLength;
     if (contentRange) responseHeaders["Content-Range"] = contentRange;
@@ -192,6 +196,18 @@ export async function GET(request: Request) {
       headers: responseHeaders,
     });
   } catch (err) {
-    return NextResponse.json({ success: false, message: err instanceof Error ? err.message : "Proxy failed" }, { status: 500 });
+    return NextResponse.json({ success: false, message: err instanceof Error ? err.message : "Proxy failed" }, { status: 500, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS", "Access-Control-Allow-Headers": "*" } });
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+      "Access-Control-Allow-Headers": "Range, Content-Type, Accept, Accept-Language, Referer, User-Agent, *",
+      "Access-Control-Max-Age": "86400",
+    },
+  });
 }
