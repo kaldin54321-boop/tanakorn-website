@@ -115,6 +115,32 @@ async function resolveMediaFire(url: string): Promise<ResolvedExternal | null> {
     m = html.match(/window\.location\s*=\s*"(https:\/\/download[^"]+)"/i);
     if (m) return { directUrl: m[1].replace(/&amp;/g, "&"), provider: "mediafire", needsProxy: true };
 
+    // 7. Try MediaFire API via quick_key (for share links like /file/abc123/filename)
+    const qkMatch = url.match(/\/file\/([a-zA-Z0-9]+)\//);
+    if (qkMatch) {
+      const quickKey = qkMatch[1];
+      try {
+        const apiCtrl = new AbortController();
+        const apiTid = setTimeout(() => apiCtrl.abort(), 8000);
+        const apiRes = await fetch(`https://www.mediafire.com/api/1.4/file/get_info.php?quick_key=${quickKey}&response_format=json`, {
+          headers: { "User-Agent": "Mozilla/5.0", Accept: "application/json" },
+          signal: apiCtrl.signal,
+        });
+        clearTimeout(apiTid);
+        if (apiRes.ok) {
+          const j = await apiRes.json().catch(() => null);
+          const links = j?.response?.file_info?.links?.normal_download;
+          if (links && typeof links === "string" && links.includes("mediafire.com")) {
+            return { directUrl: links, provider: "mediafire", needsProxy: true };
+          }
+          const dl = j?.response?.file_info?.links?.direct_download;
+          if (dl && typeof dl === "string" && dl.includes("mediafire.com")) {
+            return { directUrl: dl, provider: "mediafire", needsProxy: true };
+          }
+        }
+      } catch {}
+    }
+
     return null;
   } catch {
     return null;
