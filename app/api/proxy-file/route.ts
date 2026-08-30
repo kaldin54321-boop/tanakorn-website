@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveExternalUrl } from "@/lib/external-resolver";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,17 +33,58 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, message: "Invalid URL" }, { status: 400 });
     }
 
+    // If URL is a share link (MediaFire/Google Drive), resolve to direct link first (on Render, not blocked)
+    let fetchUrl = decoded;
+    try {
+      const resolved = await resolveExternalUrl(decoded);
+      // If resolved to a different direct URL (e.g., share -> download*.mediafire.com or drive uc?export=download), use it
+      // For MediaFire, the direct link is temporary but fresh at request time, so not expired
+      if (resolved.directUrl && resolved.directUrl !== decoded && resolved.provider !== "generic") {
+        fetchUrl = resolved.directUrl;
+      } else if (resolved.provider === "generic" && decoded.includes("mediafire.com/file/")) {
+        // Fallback: if generic but still a share link, keep original and let fetch handle HTML extraction below
+        fetchUrl = decoded;
+      }
+    } catch {}
+
     const range = request.headers.get("range") || undefined;
     const headers: Record<string, string> = {
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
       Accept: "*/*",
+      "Accept-Language": "en-US,en;q=0.9",
+      Referer: fetchUrl.includes("mediafire.com") ? "https://www.mediafire.com/" : fetchUrl.includes("drive.google.com") ? "https://drive.google.com/" : undefined as any,
     };
+    // Remove undefined Referer
+    if (!headers["Referer"]) delete (headers as any)["Referer"];
     if (range) headers["Range"] = range;
 
-    const res = await fetch(decoded, {
+    let res = await fetch(fetchUrl, {
       headers,
       redirect: "follow",
     });
+
+    // Handle Google Drive virus scan warning or MediaFire HTML on Render (should not happen often, but handle)
+    const ct = res.headers.get("Content-Type") || "";
+    if (ct.includes("text/html") && fetchUrl.includes("drive.google.com")) {
+      const html = await res.clone().text().catch(() => "");
+      const m = html.match(/href="([^"]*export=download[^"]*confirm=[^"]*)"/i);
+      if (m) {
+        const confirmUrl = m[1].replace(/&amp;/g, "&");
+        const abs = confirmUrl.startsWith("http") ? confirmUrl : `https://drive.google.com${confirmUrl}`;
+        const r2 = await fetch(abs, { headers, redirect: "follow" });
+        if (r2.ok || r2.status === 206) res = r2;
+      }
+    }
+    // For MediaFire share HTML that wasn't resolved (fallback), try to extract direct link from HTML and fetch
+    if (ct.includes("text/html") && fetchUrl.includes("mediafire.com/file/")) {
+      const html = await res.clone().text().catch(() => "");
+      const m = html.match(/href="(https:\/\/download[^"]+)"/i) || html.match(/https:\/\/download\d*\.mediafire\.com[^"'\s<>]+/i);
+      if (m) {
+        const direct = (m[1] || m[0]).replace(/&amp;/g, "&");
+        const r2 = await fetch(direct, { headers: { ...headers, Referer: "https://www.mediafire.com/" }, redirect: "follow" });
+        if (r2.ok || r2.status === 206) res = r2;
+      }
+    }
 
     if (!res.ok && res.status !== 206) {
       return NextResponse.json({ success: false, message: `Failed to fetch external file: ${res.status} ${res.statusText}` }, { status: 502 });

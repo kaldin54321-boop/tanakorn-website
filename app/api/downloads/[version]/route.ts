@@ -61,16 +61,75 @@ async function proxyExternalUrl(
     headers["Range"] = range;
   }
 
+  const isCloudflare = !!process.env.CF_PAGES || !!process.env.CLOUDFLARE_PAGES || request.headers.get("cf-ray") || (globalThis as any).caches !== undefined;
+  // On Cloudflare, MediaFire share links (www.mediafire.com/file/...) are blocked and return HTML
+  // Instead of trying to fetch share page on Cloudflare (blocked), directly stream via Render proxy-file (Node, not blocked)
+  // This keeps download on-site with progress bar and uses fresh direct link (not expired), without exposing direct link
+  const isMediaFireShare = externalUrl.includes("mediafire.com/file/") || externalUrl.includes("mediafire.com/view/");
+  if (isCloudflare && isMediaFireShare) {
+    try {
+      const renderProxyUrl = `https://winlator-frost.onrender.com/api/proxy-file?url=${encodeURIComponent(externalUrl)}&filename=${encodeURIComponent(fileName)}`;
+      const rController = new AbortController();
+      // Render free tier may sleep and need 30-50s to wake — give 45s
+      const rTid = setTimeout(() => rController.abort(), 45000);
+      const rHeaders: Record<string, string> = {};
+      if (range) rHeaders["Range"] = range;
+      const rRes = await fetch(renderProxyUrl, {
+        headers: rHeaders,
+        signal: rController.signal,
+      } as any);
+      clearTimeout(rTid);
+      if (rRes.ok || rRes.status === 206) {
+        const contentLength = rRes.headers.get("Content-Length");
+        const contentRange = rRes.headers.get("Content-Range");
+        const contentType = rRes.headers.get("Content-Type") || fileType || "application/vnd.android.package-archive";
+        const responseHeaders: Record<string, string> = {
+          "Content-Type": contentType,
+          "Content-Disposition": `attachment; filename="${fileName}"`,
+          "Accept-Ranges": "bytes",
+          "Cache-Control": "no-store",
+          "X-Proxied-Via": "render-mediafire-share",
+        };
+        if (contentLength) responseHeaders["Content-Length"] = contentLength;
+        if (contentRange) responseHeaders["Content-Range"] = contentRange;
+        const reader = rRes.body?.getReader();
+        if (!reader) throw new Error("No readable stream from Render proxy");
+        const webStream = new ReadableStream({
+          async start(controller) {
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (value) controller.enqueue(value);
+              }
+              controller.close();
+            } catch (err) {
+              controller.error(err);
+            }
+          },
+          cancel() {
+            reader.cancel();
+          },
+        });
+        return new Response(webStream, {
+          status: rRes.status === 206 ? 206 : 200,
+          headers: responseHeaders,
+        });
+      }
+    } catch (e) {
+      console.warn("Render proxy-file for MediaFire share failed, falling back to normal resolve:", e);
+      // Fall through to normal resolve below
+    }
+  }
+
   // Resolve third-party URL to direct link (Google Drive, MediaFire, Dropbox, etc.)
-  // On Cloudflare Workers, MediaFire share pages are often blocked (returns HTML) — fallback to Render resolver (Node, not blocked)
   let resolved = await resolveExternalUrl(externalUrl);
   let directUrl = resolved.directUrl;
-  const isCloudflare = !!process.env.CF_PAGES || !!process.env.CLOUDFLARE_PAGES || request.headers.get("cf-ray") || (globalThis as any).caches !== undefined;
   if (resolved.provider === "mediafire_unresolved" && isCloudflare) {
     try {
       const renderResolver = `https://winlator-frost.onrender.com/api/resolve-external?url=${encodeURIComponent(externalUrl)}`;
       const rController = new AbortController();
-      const rTid = setTimeout(() => rController.abort(), 12000);
+      const rTid = setTimeout(() => rController.abort(), 30000);
       const rRes = await fetch(renderResolver, { headers: { "User-Agent": "Mozilla/5.0" }, signal: rController.signal } as any);
       clearTimeout(rTid);
       if (rRes.ok) {
