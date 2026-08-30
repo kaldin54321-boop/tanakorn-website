@@ -70,7 +70,7 @@ async function proxyExternalUrl(
   if (isCloudflare && isMediaFireAny) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const renderProxyUrl = `https://winlator-frost.onrender.com/api/proxy-file?url=${encodeURIComponent(externalUrl)}&filename=${encodeURIComponent(fileName)}`;
+        const renderProxyUrl = `https://tanakorn-website.onrender.com/api/proxy-file?url=${encodeURIComponent(externalUrl)}&filename=${encodeURIComponent(fileName)}`;
         const rController = new AbortController();
         const rTid = setTimeout(() => rController.abort(), 90000);
         const rHeaders: Record<string, string> = {};
@@ -143,7 +143,7 @@ async function proxyExternalUrl(
     // Try Render proxy-file with retries (Render free tier sleeps, needs 30-60s wake, use 90s timeout)
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const renderProxyUrl = `https://winlator-frost.onrender.com/api/proxy-file?url=${encodeURIComponent(externalUrl)}&filename=${encodeURIComponent(fileName)}`;
+        const renderProxyUrl = `https://tanakorn-website.onrender.com/api/proxy-file?url=${encodeURIComponent(externalUrl)}&filename=${encodeURIComponent(fileName)}`;
         const rController = new AbortController();
         const rTid = setTimeout(() => rController.abort(), 90000);
         const rHeaders: Record<string, string> = {};
@@ -312,7 +312,7 @@ async function proxyExternalUrl(
             if (isCloudflare) {
               // First try Render resolver to get fresh direct link (for share links)
               try {
-                const renderResolver = `https://winlator-frost.onrender.com/api/resolve-external?url=${encodeURIComponent(externalUrl)}`;
+                const renderResolver = `https://tanakorn-website.onrender.com/api/resolve-external?url=${encodeURIComponent(externalUrl)}`;
                 const rCtrl = new AbortController();
                 const rTid = setTimeout(() => rCtrl.abort(), 10000);
                 const rRes = await fetch(renderResolver, { headers: { "User-Agent": "Mozilla/5.0" }, signal: rCtrl.signal } as any);
@@ -334,7 +334,7 @@ async function proxyExternalUrl(
                       return rDirectRes;
                     }
                     // If still HTML on Cloudflare (direct link also blocked), fallback to Render proxy-file for on-site streaming
-                    const renderProxy = `https://winlator-frost.onrender.com/api/proxy-file?url=${encodeURIComponent(rJson.directUrl)}&filename=${encodeURIComponent(fileName)}`;
+                    const renderProxy = `https://tanakorn-website.onrender.com/api/proxy-file?url=${encodeURIComponent(rJson.directUrl)}&filename=${encodeURIComponent(fileName)}`;
                     const pRes = await fetch(renderProxy, {
                       headers: range ? { Range: range } : {},
                       signal: controller.signal,
@@ -348,7 +348,7 @@ async function proxyExternalUrl(
               } catch {}
               // Generic fallback for any HTML on Cloudflare: proxy file via Render (keeps on-site with progress bar)
               try {
-                const renderProxy = `https://winlator-frost.onrender.com/api/proxy-file?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(fileName)}`;
+                const renderProxy = `https://tanakorn-website.onrender.com/api/proxy-file?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(fileName)}`;
                 const pRes = await fetch(renderProxy, {
                   headers: range ? { Range: range } : {},
                   signal: controller.signal,
@@ -359,7 +359,7 @@ async function proxyExternalUrl(
                 }
                 // Also try with original externalUrl if url is already direct
                 if (url !== externalUrl) {
-                  const renderProxy2 = `https://winlator-frost.onrender.com/api/proxy-file?url=${encodeURIComponent(externalUrl)}&filename=${encodeURIComponent(fileName)}`;
+                  const renderProxy2 = `https://tanakorn-website.onrender.com/api/proxy-file?url=${encodeURIComponent(externalUrl)}&filename=${encodeURIComponent(fileName)}`;
                   const pRes2 = await fetch(renderProxy2, {
                     headers: range ? { Range: range } : {},
                     signal: controller.signal,
@@ -382,7 +382,7 @@ async function proxyExternalUrl(
         const cd = res.headers.get("Content-Disposition") || "";
         if (!cd.includes("attachment") && url.match(/\.(apk|zip|rar)/i)) {
           try {
-            const renderProxy = `https://winlator-frost.onrender.com/api/proxy-file?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(fileName)}`;
+            const renderProxy = `https://tanakorn-website.onrender.com/api/proxy-file?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(fileName)}`;
             const pRes = await fetch(renderProxy, {
               headers: range ? { Range: range } : {},
               signal: controller.signal,
@@ -803,7 +803,7 @@ export async function GET(
           {
             success: false,
             message:
-              "APK file not found. File was on previous local host (PC uploads/ lost on Render redeploy). Re-upload via Admin → Releases on https://winlator-frost.onrender.com - now goes to Filebase S3 5GB (persistent, not Supabase 50MB, not PC-dependent). For 239MB+, ensure Filebase env is set on Render.",
+              "APK file not found. File was on previous local host (PC uploads/ lost on Render redeploy). Re-upload via Admin → Releases on https://tanakorn-website.onrender.com - now goes to Filebase S3 5GB (persistent, not Supabase 50MB, not PC-dependent). For 239MB+, ensure Filebase env is set on Render.",
             file_path: release.file_path,
             hint: "Set Filebase S3 env on Render: S3_ENDPOINT=https://s3.filebase.com, S3_BUCKET=winlator-releases, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, then re-upload APK. Or use External APK URL field.",
           },
