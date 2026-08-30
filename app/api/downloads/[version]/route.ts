@@ -62,14 +62,41 @@ async function proxyExternalUrl(
   }
 
   const isCloudflare = !!process.env.CF_PAGES || !!process.env.CLOUDFLARE_PAGES || request.headers.get("cf-ray") || (globalThis as any).caches !== undefined;
-  // On Cloudflare, MediaFire share links (www.mediafire.com/file/...) are blocked and return HTML
-  // Instead of trying to fetch share page on Cloudflare (blocked), directly stream via Render proxy-file (Node, not blocked)
-  // This keeps download on-site with progress bar and uses fresh direct link (not expired, resolved at download time)
   const isMediaFireShare = externalUrl.includes("mediafire.com/file/") || externalUrl.includes("mediafire.com/view/") || externalUrl.includes("mediafire.com/download/");
   const isMediaFireDirect = externalUrl.includes("download") && externalUrl.includes("mediafire.com");
-  // For any MediaFire URL on Cloudflare, prefer Render proxy for on-site (direct links expire, share links blocked on Workers IP)
-  // Use Render for share links always, and for direct links if they are download*.mediafire.com (temporary) - ensures fresh link at download time
-  const shouldUseRenderForMediaFire = isCloudflare && (isMediaFireShare || isMediaFireDirect || externalUrl.includes("mediafire.com"));
+  const isMediaFireAny = externalUrl.includes("mediafire.com");
+  // Resolve third-party URL to direct link (Google Drive, MediaFire, Dropbox, etc.)
+  let resolved = await resolveExternalUrl(externalUrl);
+  let directUrl = resolved.directUrl;
+  // On Cloudflare, try MediaFire API directly first (quick, no HTML scrape) for share links
+  if (isCloudflare && isMediaFireShare) {
+    const qkMatch = externalUrl.match(/\/file\/([a-zA-Z0-9]+)\//);
+    if (qkMatch) {
+      const quickKey = qkMatch[1];
+      for (const apiUrl of [
+        `https://www.mediafire.com/api/1.4/file/get_info.php?quick_key=${quickKey}&response_format=json`,
+        `https://www.mediafire.com/api/1.5/file/get_info.php?quick_key=${quickKey}&response_format=json`,
+      ]) {
+        try {
+          const apiCtrl = new AbortController();
+          const apiTid = setTimeout(() => apiCtrl.abort(), 8000);
+          const apiRes = await fetch(apiUrl, { headers: { "User-Agent": "Mozilla/5.0", Accept: "application/json" }, signal: apiCtrl.signal } as any);
+          clearTimeout(apiTid);
+          if (apiRes.ok) {
+            const j = await apiRes.json().catch(() => null);
+            const cand = j?.response?.file_info?.links?.normal_download || j?.response?.file_info?.links?.direct_download;
+            if (cand && typeof cand === "string" && cand.includes("mediafire.com")) {
+              directUrl = cand;
+              (resolved as any).provider = "mediafire";
+              break;
+            }
+          }
+        } catch {}
+      }
+    }
+  }
+  // For any MediaFire URL on Cloudflare, prefer Render proxy for on-site (direct links expire, share links blocked)
+  const shouldUseRenderForMediaFire = isCloudflare && (isMediaFireShare || isMediaFireDirect || isMediaFireAny);
   if (shouldUseRenderForMediaFire) {
     // Try Render proxy-file with retries (Render free tier sleeps, needs 30-60s wake, use 90s timeout)
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -161,26 +188,8 @@ async function proxyExternalUrl(
     }
     console.warn("Render proxy-file for MediaFire failed after 3 attempts, falling back to normal Workers resolve (may return HTML error)");
   }
-
-  // Resolve third-party URL to direct link (Google Drive, MediaFire, Dropbox, etc.)
-  let resolved = await resolveExternalUrl(externalUrl);
-  let directUrl = resolved.directUrl;
-  if (resolved.provider === "mediafire_unresolved" && isCloudflare) {
-    try {
-      const renderResolver = `https://winlator-frost.onrender.com/api/resolve-external?url=${encodeURIComponent(externalUrl)}`;
-      const rController = new AbortController();
-      const rTid = setTimeout(() => rController.abort(), 30000);
-      const rRes = await fetch(renderResolver, { headers: { "User-Agent": "Mozilla/5.0" }, signal: rController.signal } as any);
-      clearTimeout(rTid);
-      if (rRes.ok) {
-        const j = await rRes.json().catch(() => null);
-        if (j && j.success && j.directUrl && j.directUrl !== externalUrl && j.directUrl.includes("mediafire.com")) {
-          directUrl = j.directUrl;
-          (resolved as any).provider = j.provider || "mediafire";
-        }
-      }
-    } catch {}
-  }
+  // resolved/directUrl already declared above for Cloudflare MediaFire handling
+  // For other providers or non-Cloudflare, ensure directUrl is set (already done)
 
   // Mega.nz cannot be proxied server-side reliably
   if (resolved.provider === "mega") {

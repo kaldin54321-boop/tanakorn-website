@@ -115,31 +115,78 @@ async function resolveMediaFire(url: string): Promise<ResolvedExternal | null> {
     m = html.match(/window\.location\s*=\s*"(https:\/\/download[^"]+)"/i);
     if (m) return { directUrl: m[1].replace(/&amp;/g, "&"), provider: "mediafire", needsProxy: true };
 
-    // 7. Try MediaFire API via quick_key (for share links like /file/abc123/filename)
+    // 7. Try MediaFire API via quick_key (for share links like /file/abc123/filename) - most reliable for share links, works even when HTML is blocked/JS-generated
     const qkMatch = url.match(/\/file\/([a-zA-Z0-9]+)\//);
     if (qkMatch) {
       const quickKey = qkMatch[1];
-      try {
-        const apiCtrl = new AbortController();
-        const apiTid = setTimeout(() => apiCtrl.abort(), 8000);
-        const apiRes = await fetch(`https://www.mediafire.com/api/1.4/file/get_info.php?quick_key=${quickKey}&response_format=json`, {
-          headers: { "User-Agent": "Mozilla/5.0", Accept: "application/json" },
-          signal: apiCtrl.signal,
-        });
-        clearTimeout(apiTid);
-        if (apiRes.ok) {
+      // Try multiple API endpoints and response formats
+      const apiUrls = [
+        `https://www.mediafire.com/api/1.4/file/get_info.php?quick_key=${quickKey}&response_format=json`,
+        `https://www.mediafire.com/api/1.5/file/get_info.php?quick_key=${quickKey}&response_format=json`,
+        `https://www.mediafire.com/api/file/get_info.php?quick_key=${quickKey}`,
+      ];
+      for (const apiUrl of apiUrls) {
+        try {
+          const apiCtrl = new AbortController();
+          const apiTid = setTimeout(() => apiCtrl.abort(), 10000);
+          const apiRes = await fetch(apiUrl, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", Accept: "application/json, text/plain, */*" },
+            signal: apiCtrl.signal,
+            redirect: "follow",
+          } as any);
+          clearTimeout(apiTid);
+          if (!apiRes.ok) continue;
           const j = await apiRes.json().catch(() => null);
-          const links = j?.response?.file_info?.links?.normal_download;
-          if (links && typeof links === "string" && links.includes("mediafire.com")) {
-            return { directUrl: links, provider: "mediafire", needsProxy: true };
+          if (!j) continue;
+          // Try different response structures
+          const fileInfo = j?.response?.file_info || j?.response?.file_infos?.[0] || j?.file_info || j;
+          const links = fileInfo?.links || j?.response?.links || fileInfo;
+          const candidates = [
+            links?.normal_download,
+            links?.direct_download,
+            links?.view,
+            j?.response?.file_info?.links?.normal_download,
+            j?.response?.file_info?.links?.direct_download,
+            fileInfo?.normal_download,
+            fileInfo?.direct_download,
+          ].filter((v) => typeof v === "string" && v.includes("mediafire.com"));
+          for (const cand of candidates) {
+            if (cand) return { directUrl: cand, provider: "mediafire", needsProxy: true };
           }
-          const dl = j?.response?.file_info?.links?.direct_download;
-          if (dl && typeof dl === "string" && dl.includes("mediafire.com")) {
-            return { directUrl: dl, provider: "mediafire", needsProxy: true };
+          // Also try to find any mediafire URL in the JSON string
+          const jsonStr = JSON.stringify(j);
+          const mApi = jsonStr.match(/https:\/\/[^"]*mediafire\.com[^"]*/i);
+          if (mApi && mApi[0].includes("download")) {
+            return { directUrl: mApi[0], provider: "mediafire", needsProxy: true };
           }
-        }
-      } catch {}
+        } catch {}
+      }
     }
+
+    // 8. Fallback: try to fetch via MediaFire download page with different User-Agent for Workers
+    // Cloudflare Workers may be blocked with default UA, try with mobile UA
+    try {
+      const mobileCtrl = new AbortController();
+      const mobileTid = setTimeout(() => mobileCtrl.abort(), 8000);
+      const mobileRes = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
+          Accept: "text/html,application/xhtml+xml",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+        signal: mobileCtrl.signal,
+        redirect: "follow",
+      } as any);
+      clearTimeout(mobileTid);
+      if (mobileRes.ok) {
+        const html2 = await mobileRes.text();
+        const m2 = html2.match(/href="(https:\/\/download[^"]+)"/i) || html2.match(/https:\/\/download\d*\.mediafire\.com[^"'\s<>]+/i);
+        if (m2) {
+          const cand = (m2[1] || m2[0]).replace(/&amp;/g, "&");
+          return { directUrl: cand, provider: "mediafire", needsProxy: true };
+        }
+      }
+    } catch {}
 
     return null;
   } catch {

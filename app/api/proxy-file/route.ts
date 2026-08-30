@@ -79,10 +79,9 @@ export async function GET(request: Request) {
         if (r2.ok || r2.status === 206) res = r2;
       }
     }
-    // For MediaFire share HTML that wasn't resolved (fallback), try to extract direct link from HTML and fetch - robust for current MediaFire structure
+    // For MediaFire share HTML that wasn't resolved (fallback), try to extract direct link from HTML and fetch - robust for current MediaFire structure + API
     if (ct.includes("text/html") && (fetchUrl.includes("mediafire.com/file/") || fetchUrl.includes("mediafire.com/view/"))) {
       const html = await res.clone().text().catch(() => "");
-      // Try multiple patterns for current MediaFire (2024-2026) - including JS and data attributes
       let m: RegExpMatchArray | null = null;
       m = html.match(/aria-label="Download[^"]*"\s*href="(https:\/\/download[^"]+)"/i);
       if (!m) m = html.match(/id="downloadButton"[^>]*href="(https:\/\/[^"]+)"/i);
@@ -91,26 +90,43 @@ export async function GET(request: Request) {
       if (!m) m = html.match(/data-url="(https:\/\/download[^"]+)"/i);
       if (!m) m = html.match(/window\.location\s*=\s*"(https:\/\/download[^"]+)"/i);
       if (!m) m = html.match(/href='(https:\/\/download[^']+)'/i);
+      // Markdown style in some Render HTML
       if (!m) {
-        const all = [...html.matchAll(/https:\/\/download\d*\.mediafire\.com[^"'\s<>]+/gi)];
+        const mdM = html.match(/\[Download[^\]]*\]\(https:\/\/download[^\)]+\)/i) as any;
+        if (mdM) {
+          const mdUrl = (mdM[0] as string).match(/https:\/\/download[^\)]+/i);
+          if (mdUrl) m = [mdUrl[0], mdUrl[0]] as any;
+        }
+      }
+      if (!m) {
+        const all = [...html.matchAll(/https:\/\/download\d*\.mediafire\.com[^"'\s<>\)\]]+/gi)];
         if (all.length > 0) m = [all[0][0], all[0][0]] as any;
       }
-      // Also try to find kNO or dkey based direct link construction
+      // Try MediaFire API with quick_key from URL if HTML patterns fail (most reliable for share links)
       if (!m) {
-        const kNoMatch = html.match(/kNO\s*=\s*"([^"]+)"/i) || html.match(/dkey\s*=\s*"([^"]+)"/i);
-        const fileIdMatch = html.match(/\/file\/([a-z0-9]+)\//i);
-        if (kNoMatch && fileIdMatch) {
-          // Try to construct direct link via MediaFire API (fallback)
-          const dkey = kNoMatch[1];
-          const fileId = fileIdMatch[1];
-          // Try common download URL pattern with dkey
-          const tryUrl = `https://download.mediafire.com/file/${fileId}/test.apk?dkey=${dkey}`;
-          // We don't know filename, but try to fetch via that pattern - will be handled by direct fetch below
-          m = [tryUrl, tryUrl] as any;
+        const qkMatch = fetchUrl.match(/\/file\/([a-zA-Z0-9]+)\//) || html.match(/\/file\/([a-zA-Z0-9]+)\//);
+        if (qkMatch) {
+          const quickKey = qkMatch[1];
+          for (const apiUrl of [
+            `https://www.mediafire.com/api/1.4/file/get_info.php?quick_key=${quickKey}&response_format=json`,
+            `https://www.mediafire.com/api/1.5/file/get_info.php?quick_key=${quickKey}&response_format=json`,
+          ]) {
+            try {
+              const apiRes = await fetch(apiUrl, { headers: { "User-Agent": "Mozilla/5.0", Accept: "application/json" } });
+              if (apiRes.ok) {
+                const j = await apiRes.json().catch(() => null);
+                const cand = j?.response?.file_info?.links?.normal_download || j?.response?.file_info?.links?.direct_download;
+                if (cand && typeof cand === "string" && cand.includes("mediafire.com")) {
+                  m = [cand, cand] as any;
+                  break;
+                }
+              }
+            } catch {}
+          }
         }
       }
       if (m) {
-        const direct = (m[1] || m[0]).replace(/&amp;/g, "&");
+        const direct = (m[1] || m[0]).replace(/&amp;/g, "&").replace(/[\)\]]+$/, "");
         const r2 = await fetch(direct, { headers: { ...headers, Referer: "https://www.mediafire.com/" }, redirect: "follow" });
         if (r2.ok || r2.status === 206) {
           const ct2 = r2.headers.get("Content-Type") || "";
@@ -118,7 +134,6 @@ export async function GET(request: Request) {
           if (!ct2.includes("text/html") || cd2.includes("attachment") || r2.headers.get("Content-Length")) {
             res = r2;
           } else {
-            // If still HTML, try one more extraction from second page
             const html2 = await r2.clone().text().catch(() => "");
             const m2 = html2.match(/href="(https:\/\/download[^"]+)"/i) || html2.match(/https:\/\/download\d*\.mediafire\.com[^"'\s<>]+/i);
             if (m2) {
