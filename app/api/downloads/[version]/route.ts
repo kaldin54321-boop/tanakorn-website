@@ -62,41 +62,83 @@ async function proxyExternalUrl(
   }
 
   const isCloudflare = !!process.env.CF_PAGES || !!process.env.CLOUDFLARE_PAGES || request.headers.get("cf-ray") || (globalThis as any).caches !== undefined;
-  const isMediaFireShare = externalUrl.includes("mediafire.com/file/") || externalUrl.includes("mediafire.com/view/") || externalUrl.includes("mediafire.com/download/");
+  const isMediaFireShare = externalUrl.includes("mediafire.com/file/") || externalUrl.includes("mediafire.com/view/");
   const isMediaFireDirect = externalUrl.includes("download") && externalUrl.includes("mediafire.com");
   const isMediaFireAny = externalUrl.includes("mediafire.com");
-  // Resolve third-party URL to direct link (Google Drive, MediaFire, Dropbox, etc.)
-  let resolved = await resolveExternalUrl(externalUrl);
-  let directUrl = resolved.directUrl;
-  // On Cloudflare, try MediaFire API directly first (quick, no HTML scrape) for share links
-  if (isCloudflare && isMediaFireShare) {
-    const qkMatch = externalUrl.match(/\/file\/([a-zA-Z0-9]+)\//);
-    if (qkMatch) {
-      const quickKey = qkMatch[1];
-      for (const apiUrl of [
-        `https://www.mediafire.com/api/1.4/file/get_info.php?quick_key=${quickKey}&response_format=json`,
-        `https://www.mediafire.com/api/1.5/file/get_info.php?quick_key=${quickKey}&response_format=json`,
-      ]) {
-        try {
-          const apiCtrl = new AbortController();
-          const apiTid = setTimeout(() => apiCtrl.abort(), 8000);
-          const apiRes = await fetch(apiUrl, { headers: { "User-Agent": "Mozilla/5.0", Accept: "application/json" }, signal: apiCtrl.signal } as any);
-          clearTimeout(apiTid);
-          if (apiRes.ok) {
-            const j = await apiRes.json().catch(() => null);
-            const cand = j?.response?.file_info?.links?.normal_download || j?.response?.file_info?.links?.direct_download;
-            if (cand && typeof cand === "string" && cand.includes("mediafire.com")) {
-              directUrl = cand;
-              (resolved as any).provider = "mediafire";
-              break;
+  // On Cloudflare, MediaFire is blocked - directly use Render proxy for on-site download with fresh direct link
+  // This bypasses Workers IP block and uses Render Node (not blocked) to resolve share -> direct and stream
+  if (isCloudflare && isMediaFireAny) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const renderProxyUrl = `https://winlator-frost.onrender.com/api/proxy-file?url=${encodeURIComponent(externalUrl)}&filename=${encodeURIComponent(fileName)}`;
+        const rController = new AbortController();
+        const rTid = setTimeout(() => rController.abort(), 90000);
+        const rHeaders: Record<string, string> = {};
+        if (range) rHeaders["Range"] = range;
+        const rRes = await fetch(renderProxyUrl, { headers: rHeaders, signal: rController.signal } as any);
+        clearTimeout(rTid);
+        if (rRes.ok || rRes.status === 206) {
+          const ct = rRes.headers.get("Content-Type") || "";
+          if (ct.includes("application/json")) {
+            const j = await rRes.clone().json().catch(() => null);
+            if (j && j.success === false && attempt < 2) {
+              await new Promise((r) => setTimeout(r, attempt === 0 ? 5000 : 10000));
+              continue;
+            }
+          } else {
+            const contentLength = rRes.headers.get("Content-Length");
+            const contentRange = rRes.headers.get("Content-Range");
+            const contentType = rRes.headers.get("Content-Type") || fileType || "application/vnd.android.package-archive";
+            const responseHeaders: Record<string, string> = {
+              "Content-Type": contentType,
+              "Content-Disposition": `attachment; filename="${fileName}"`,
+              "Accept-Ranges": "bytes",
+              "Cache-Control": "no-store",
+              "X-Proxied-Via": "render-mediafire-direct",
+            };
+            if (contentLength) responseHeaders["Content-Length"] = contentLength;
+            if (contentRange) responseHeaders["Content-Range"] = contentRange;
+            const reader = rRes.body?.getReader();
+            if (reader) {
+              const webStream = new ReadableStream({
+                async start(controller) {
+                  try {
+                    while (true) {
+                      const { done, value } = await reader.read();
+                      if (done) break;
+                      if (value) controller.enqueue(value);
+                    }
+                    controller.close();
+                  } catch (err) {
+                    controller.error(err);
+                  }
+                },
+                cancel() { reader.cancel(); },
+              });
+              return new Response(webStream, { status: rRes.status === 206 ? 206 : 200, headers: responseHeaders });
             }
           }
-        } catch {}
+        } else if (rRes.status === 502 || rRes.status === 503 || rRes.status === 504) {
+          if (attempt < 2) {
+            await new Promise((r) => setTimeout(r, attempt === 0 ? 5000 : 10000));
+            continue;
+          }
+        }
+      } catch (e) {
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, 5000));
+          continue;
+        }
       }
     }
+    // If Render proxy still fails, fall through to normal Workers handling (will try to resolve on Workers, may still return HTML error)
+    // But we have already tried Render, so if still failing, the error below will be shown
   }
-  // For any MediaFire URL on Cloudflare, prefer Render proxy for on-site (direct links expire, share links blocked)
-  const shouldUseRenderForMediaFire = isCloudflare && (isMediaFireShare || isMediaFireDirect || isMediaFireAny);
+  // Resolve third-party URL to direct link (Google Drive, MediaFire, Dropbox, etc.) for non-MediaFire or non-Cloudflare
+  let resolved = await resolveExternalUrl(externalUrl);
+  let directUrl = resolved.directUrl;
+  // For any remaining MediaFire URL on Cloudflare that wasn't handled above (e.g., direct download* that still blocked), try Render proxy as fallback
+  const shouldUseRenderForMediaFire = isCloudflare && isMediaFireAny;
   if (shouldUseRenderForMediaFire) {
     // Try Render proxy-file with retries (Render free tier sleeps, needs 30-60s wake, use 90s timeout)
     for (let attempt = 0; attempt < 3; attempt++) {
