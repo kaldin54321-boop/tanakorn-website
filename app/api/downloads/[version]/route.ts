@@ -91,16 +91,23 @@ async function proxyExternalUrl(
   }
 
   // For Google Drive large files, drive may return HTML with confirm token instead of file.
-  // We try to detect and extract confirm link via regex if content-type is html.
+  // On Cloudflare, MediaFire/Google Drive may block Workers IP and return HTML - fallback to Render proxy for actual file
   const fetchDirect = async (url: string, attempt = 0): Promise<Response> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000);
     try {
+      const fetchHeaders: Record<string, string> = { ...headers };
+      // Add Cloudflare bypass headers for MediaFire/Google Drive
+      if (isCloudflare && (url.includes("mediafire.com") || url.includes("drive.google.com"))) {
+        fetchHeaders["Accept-Language"] = "en-US,en;q=0.9";
+        fetchHeaders["Referer"] = url.includes("mediafire.com") ? "https://www.mediafire.com/" : "https://drive.google.com/";
+      }
       const res = await fetch(url, {
-        headers,
+        headers: fetchHeaders,
         signal: controller.signal,
         redirect: "follow",
-      });
+        cf: { cacheTtl: 0, cacheEverything: false },
+      } as any);
       clearTimeout(timeoutId);
 
       // Handle Google Drive confirm token page (large file virus scan warning)
@@ -123,8 +130,7 @@ async function proxyExternalUrl(
         if (dl) return fetchDirect(dl[0].replace(/&amp;/g, "&"), 1);
       }
 
-      // If MediaFire returned HTML again (unresolved), try to extract direct link before throwing (Cloudflare-friendly)
-      // On Cloudflare, share pages are often blocked - fallback to Render resolver for fresh direct link
+      // If MediaFire/Google Drive returned HTML (share page or virus scan) - try to extract direct link or fallback to Render for on-site proxy
       if (ct.includes("text/html") && !ct.includes("application/vnd.android") && attempt === 0) {
         const cd = res.headers.get("Content-Disposition") || "";
         if (!cd.includes("attachment") && !url.match(/\.(apk|zip|rar)(\?|$)/i)) {
@@ -150,38 +156,92 @@ async function proxyExternalUrl(
                   }
                 } catch {}
               }
-              // Cloudflare fallback: ask Render (Node, not blocked) to resolve share link to direct link, then proxy on-site
-              if (isCloudflare) {
-                try {
-                  const renderResolver = `https://winlator-frost.onrender.com/api/resolve-external?url=${encodeURIComponent(externalUrl)}`;
-                  const rCtrl = new AbortController();
-                  const rTid = setTimeout(() => rCtrl.abort(), 10000);
-                  const rRes = await fetch(renderResolver, { headers: { "User-Agent": "Mozilla/5.0" }, signal: rCtrl.signal } as any);
-                  clearTimeout(rTid);
-                  if (rRes.ok) {
-                    const rJson = await rRes.json().catch(() => null);
-                    if (rJson && rJson.success && rJson.directUrl && rJson.directUrl.includes("mediafire.com") && rJson.directUrl !== url) {
-                      const rDirectRes = await fetch(rJson.directUrl, {
-                        headers: { ...headers, Referer: "https://www.mediafire.com/", Accept: "*/*" },
-                        signal: controller.signal,
-                        redirect: "follow",
-                        cf: { cacheTtl: 0, cacheEverything: false },
-                      } as any);
-                      const rCt = rDirectRes.headers.get("Content-Type") || "";
-                      const rCd = rDirectRes.headers.get("Content-Disposition") || "";
-                      if (!rCt.includes("text/html") || rCd.includes("attachment") || rDirectRes.headers.get("Content-Length")) {
-                        clearTimeout(timeoutId);
-                        return rDirectRes;
-                      }
+            }
+            // Cloudflare fallback: for any HTML on Cloudflare (MediaFire/Google Drive share pages blocked), try Render proxy for on-site download
+            // This keeps download inside website with progress bar, no new-tab redirect, prevents direct link sharing
+            if (isCloudflare) {
+              // First try Render resolver to get fresh direct link (for share links)
+              try {
+                const renderResolver = `https://winlator-frost.onrender.com/api/resolve-external?url=${encodeURIComponent(externalUrl)}`;
+                const rCtrl = new AbortController();
+                const rTid = setTimeout(() => rCtrl.abort(), 10000);
+                const rRes = await fetch(renderResolver, { headers: { "User-Agent": "Mozilla/5.0" }, signal: rCtrl.signal } as any);
+                clearTimeout(rTid);
+                if (rRes.ok) {
+                  const rJson = await rRes.json().catch(() => null);
+                  if (rJson && rJson.success && rJson.directUrl && rJson.directUrl !== url) {
+                    // Try to fetch the resolved direct link on-site via Cloudflare (with Render-fetched direct link)
+                    const rDirectRes = await fetch(rJson.directUrl, {
+                      headers: { ...headers, Referer: "https://www.mediafire.com/", Accept: "*/*" },
+                      signal: controller.signal,
+                      redirect: "follow",
+                      cf: { cacheTtl: 0, cacheEverything: false },
+                    } as any);
+                    const rCt = rDirectRes.headers.get("Content-Type") || "";
+                    const rCd = rDirectRes.headers.get("Content-Disposition") || "";
+                    if (!rCt.includes("text/html") || rCd.includes("attachment") || rDirectRes.headers.get("Content-Length")) {
+                      clearTimeout(timeoutId);
+                      return rDirectRes;
+                    }
+                    // If still HTML on Cloudflare (direct link also blocked), fallback to Render proxy-file for on-site streaming
+                    const renderProxy = `https://winlator-frost.onrender.com/api/proxy-file?url=${encodeURIComponent(rJson.directUrl)}&filename=${encodeURIComponent(fileName)}`;
+                    const pRes = await fetch(renderProxy, {
+                      headers: range ? { Range: range } : {},
+                      signal: controller.signal,
+                    } as any);
+                    if (pRes.ok || pRes.status === 206) {
+                      clearTimeout(timeoutId);
+                      return pRes;
                     }
                   }
-                } catch {}
-              }
+                }
+              } catch {}
+              // Generic fallback for any HTML on Cloudflare: proxy file via Render (keeps on-site with progress bar)
+              try {
+                const renderProxy = `https://winlator-frost.onrender.com/api/proxy-file?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(fileName)}`;
+                const pRes = await fetch(renderProxy, {
+                  headers: range ? { Range: range } : {},
+                  signal: controller.signal,
+                } as any);
+                if (pRes.ok || pRes.status === 206) {
+                  clearTimeout(timeoutId);
+                  return pRes;
+                }
+                // Also try with original externalUrl if url is already direct
+                if (url !== externalUrl) {
+                  const renderProxy2 = `https://winlator-frost.onrender.com/api/proxy-file?url=${encodeURIComponent(externalUrl)}&filename=${encodeURIComponent(fileName)}`;
+                  const pRes2 = await fetch(renderProxy2, {
+                    headers: range ? { Range: range } : {},
+                    signal: controller.signal,
+                  } as any);
+                  if (pRes2.ok || pRes2.status === 206) {
+                    clearTimeout(timeoutId);
+                    return pRes2;
+                  }
+                }
+              } catch {}
             }
             throw new Error(
               "External URL returned an HTML page instead of the APK file. Please use a direct download link. For MediaFire: open the share link, click download, copy the direct link (download*.mediafire.com). For Google Drive: ensure share link is correct and file is not restricted."
             );
           }
+        }
+      }
+      // Generic Cloudflare fallback for any HTML file response (e.g., direct link blocked on Workers IP) - proxy via Render for on-site
+      if (isCloudflare && ct.includes("text/html") && attempt === 0) {
+        const cd = res.headers.get("Content-Disposition") || "";
+        if (!cd.includes("attachment") && url.match(/\.(apk|zip|rar)/i)) {
+          try {
+            const renderProxy = `https://winlator-frost.onrender.com/api/proxy-file?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(fileName)}`;
+            const pRes = await fetch(renderProxy, {
+              headers: range ? { Range: range } : {},
+              signal: controller.signal,
+            } as any);
+            if (pRes.ok || pRes.status === 206) {
+              clearTimeout(timeoutId);
+              return pRes;
+            }
+          } catch {}
         }
       }
 
