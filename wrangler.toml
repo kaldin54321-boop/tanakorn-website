@@ -2,6 +2,10 @@ name = "tanakorn-website"
 compatibility_date = "2025-08-25"
 compatibility_flags = ["nodejs_compat"]
 
+main = ".open-next/worker.js"
+[assets]
+directory = ".open-next/assets"
+
 # Cloudflare Pages — winlator-frost.pages.dev (free, no card)
 # For static export (CF_PAGES=1), out/ is static homepage
 # For SSR via opennext (Workers), use main = ".open-next/worker.js" instead
