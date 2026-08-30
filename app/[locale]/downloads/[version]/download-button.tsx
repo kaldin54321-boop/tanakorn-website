@@ -125,18 +125,6 @@ export default function DownloadButton({
         const data = await res
           .json()
           .catch(() => null);
-        // Cloudflare may block MediaFire/Google Drive share links and return HTML — fallback to direct external URL
-        const fallbackUrl = (data as any)?.fallbackUrl;
-        if (fallbackUrl && typeof fallbackUrl === "string") {
-          // Open direct link in new tab (still counts as download, already incremented)
-          window.open(fallbackUrl, "_blank", "noopener,noreferrer");
-          setDownloading(false);
-          setPaused(false);
-          setError(
-            `On-site proxy blocked by external host (common on Cloudflare). Opened direct download in new tab.\nFor on-site proxy, use a direct link (download*.mediafire.com, drive.google.com/uc?export=download, R2/S3, GitHub Releases) or host on S3/R2.`
-          );
-          return;
-        }
         throw new Error(
           data?.message ||
             `Download failed: ${res.status} ${res.statusText}`

@@ -121,6 +121,7 @@ async function proxyExternalUrl(
                     headers: { ...headers, Referer: "https://www.mediafire.com/", Accept: "*/*" },
                     signal: controller.signal,
                     redirect: "follow",
+                    cf: { cacheTtl: 0, cacheEverything: false },
                   } as any);
                   const ct2 = directRes.headers.get("Content-Type") || "";
                   const cd2 = directRes.headers.get("Content-Disposition") || "";
@@ -448,8 +449,8 @@ export async function GET(
       return NextResponse.json({ success: false, message: "No file" }, { status: 404 });
     }
 
-    // External URL - proxy the download instead of redirecting (stays on-site, no new tab)
-    // On Cloudflare, some hosts block Workers IP and return HTML — fallback to redirect so download still works
+    // External URL - proxy the download on-site (no redirect, progress bar in release page)
+    // Keeps download inside website to prevent direct link sharing, as requested
     if (release.external_url) {
       const fileName = release.file_name || `Winlator@Frost-${release.version}.apk`;
       try {
@@ -461,34 +462,14 @@ export async function GET(
           release.file_type
         );
       } catch (err) {
-        console.error("External URL proxy error (Cloudflare may be blocked, falling back to redirect):", err);
-        // Fallback: redirect to direct URL (for Cloudflare-blocked hosts like MediaFire/Google Drive share links)
-        // This still allows download via redirect (new tab) when on-site proxy is blocked
-        try {
-          const resolved = await resolveExternalUrl(release.external_url);
-          // For generic direct links, redirect to resolved directUrl; for unresolved, redirect to original
-          const fallbackUrl = resolved.directUrl || release.external_url;
-          // Return JSON with redirect hint for client to handle as fallback, plus actual redirect
-          // Client download-button will try proxy first, on 502 it can fallback to window.open(fallbackUrl)
-          return NextResponse.json(
-            {
-              success: false,
-              message: `Failed to download from external URL: ${err instanceof Error ? err.message : "Unknown error"}`,
-              fallbackUrl,
-              provider: (resolved as any).provider || "unknown",
-            },
-            { status: 502, headers: { "Cache-Control": "no-store" } }
-          );
-        } catch {
-          return NextResponse.json(
-            {
-              success: false,
-              message: `Failed to download from external URL: ${err instanceof Error ? err.message : "Unknown error"}`,
-              fallbackUrl: release.external_url,
-            },
-            { status: 502, headers: { "Cache-Control": "no-store" } }
-          );
-        }
+        console.error("External URL proxy error (on-site):", err);
+        return NextResponse.json(
+          {
+            success: false,
+            message: `Failed to download from external URL: ${err instanceof Error ? err.message : "Unknown error"}. Please ensure the external URL is a direct download link (download*.mediafire.com for MediaFire, uc?export=download for Google Drive, or R2/S3/GitHub direct). For MediaFire share links, open the share link, click Download, and copy the direct link.`,
+          },
+          { status: 502, headers: { "Cache-Control": "no-store" } }
+        );
       }
     }
 

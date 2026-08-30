@@ -81,6 +81,7 @@ async function resolveMediaFire(url: string): Promise<ResolvedExternal | null> {
       },
       signal: controller.signal,
       redirect: "follow",
+      cf: { cacheTtl: 0, cacheEverything: false },
     } as any);
     clearTimeout(tid);
     if (!res.ok) return null;
