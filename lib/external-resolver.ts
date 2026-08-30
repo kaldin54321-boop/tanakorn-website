@@ -60,7 +60,7 @@ function resolveDropbox(url: string): ResolvedExternal | null {
   }
 }
 
-// MediaFire: fetch HTML and extract direct download link
+// MediaFire: fetch HTML and extract direct download link (robust for Cloudflare Workers)
 async function resolveMediaFire(url: string): Promise<ResolvedExternal | null> {
   if (!url.includes("mediafire.com")) return null;
   // If already direct download subdomain, return as-is
@@ -69,41 +69,53 @@ async function resolveMediaFire(url: string): Promise<ResolvedExternal | null> {
   }
   try {
     const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 10000);
+    const tid = setTimeout(() => controller.abort(), 15000);
     const res = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        Accept: "text/html,application/xhtml+xml",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        Referer: "https://www.mediafire.com/",
+        "Sec-Fetch-Site": "same-origin",
+        "Sec-Fetch-Mode": "navigate",
       },
       signal: controller.signal,
       redirect: "follow",
+      // Cloudflare Workers need cf cache bypass for fresh HTML
+      cf: { cacheTtl: 0, cacheEverything: false } as any,
     });
     clearTimeout(tid);
     if (!res.ok) return null;
     const html = await res.text();
 
-    // Try multiple patterns used by MediaFire
-    // 1. aria-label="Download file" href="https://download..."
+    // Try multiple patterns used by MediaFire (including Cloudflare variant)
     let m = html.match(/aria-label="Download[^"]*"\s*href="(https:\/\/download[^"]+)"/i);
     if (m) return { directUrl: m[1].replace(/&amp;/g, "&"), provider: "mediafire", needsProxy: true };
 
-    // 2. input with download href
     m = html.match(/href="(https:\/\/download[^\"]*\.mediafire\.com[^\"]*)"/i);
     if (m) return { directUrl: m[1].replace(/&amp;/g, "&"), provider: "mediafire", needsProxy: true };
 
-    // 3. downloadButton
     m = html.match(/class="input[^"]*"\s*href="(https:\/\/download[^"]+)"/i);
     if (m) return { directUrl: m[1].replace(/&amp;/g, "&"), provider: "mediafire", needsProxy: true };
 
-    // 4. any download*.mediafire.com link
+    // 4. input#downloadButton
+    m = html.match(/id="downloadButton"[^>]*href="(https:\/\/[^"]+)"/i);
+    if (m) return { directUrl: m[1].replace(/&amp;/g, "&"), provider: "mediafire", needsProxy: true };
+
+    // 5. any download*.mediafire.com link
     const all = [...html.matchAll(/https:\/\/download\d*\.mediafire\.com[^"'\s<>]+/gi)];
     if (all.length > 0) {
-      // pick the longest that looks like a file
       const candidate = all.map((a) => a[0].replace(/&amp;/g, "&")).sort((a, b) => b.length - a.length)[0];
       if (candidate) return { directUrl: candidate, provider: "mediafire", needsProxy: true };
     }
 
-    // fallback: return original, let proxy try (might fail but we tried)
+    // 6. Cloudflare-specific: look for data-url or javascript redirect
+    m = html.match(/data-url="(https:\/\/download[^"]+)"/i);
+    if (m) return { directUrl: m[1].replace(/&amp;/g, "&"), provider: "mediafire", needsProxy: true };
+
+    m = html.match(/window\.location\s*=\s*"(https:\/\/download[^"]+)"/i);
+    if (m) return { directUrl: m[1].replace(/&amp;/g, "&"), provider: "mediafire", needsProxy: true };
+
     return null;
   } catch {
     return null;

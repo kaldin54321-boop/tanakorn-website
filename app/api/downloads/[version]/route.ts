@@ -105,13 +105,33 @@ async function proxyExternalUrl(
         if (dl) return fetchDirect(dl[0].replace(/&amp;/g, "&"), 1);
       }
 
-      // If MediaFire returned HTML again (unresolved), throw
+      // If MediaFire returned HTML again (unresolved), try to extract direct link before throwing (Cloudflare-friendly)
       if (ct.includes("text/html") && !ct.includes("application/vnd.android") && attempt === 0) {
-        // Try to avoid proxying HTML page for APK: check Content-Disposition
         const cd = res.headers.get("Content-Disposition") || "";
         if (!cd.includes("attachment") && !url.match(/\.(apk|zip|rar)(\?|$)/i)) {
-          // If we fetched a HTML page not a file, treat as error so user knows to use direct link
-          if (htmlLooksLikeFileHostPage(await res.clone().text().catch(() => ""))) {
+          const htmlForCheck = await res.clone().text().catch(() => "");
+          if (htmlLooksLikeFileHostPage(htmlForCheck)) {
+            // Try to extract MediaFire direct link from HTML (Cloudflare may need extra headers)
+            if (url.includes("mediafire.com") || htmlForCheck.toLowerCase().includes("mediafire")) {
+              const mMedia = htmlForCheck.match(/href="(https:\/\/download[^"]+)"/i) || htmlForCheck.match(/https:\/\/download\d*\.mediafire\.com[^"'\s<>]+/i);
+              if (mMedia) {
+                const direct = (mMedia[1] || mMedia[0]).replace(/&amp;/g, "&");
+                try {
+                  const directRes = await fetch(direct, {
+                    headers: { ...headers, Referer: "https://www.mediafire.com/", Accept: "*/*" },
+                    signal: controller.signal,
+                    redirect: "follow",
+                    cf: { cacheTtl: 0, cacheEverything: false } as any,
+                  });
+                  const ct2 = directRes.headers.get("Content-Type") || "";
+                  const cd2 = directRes.headers.get("Content-Disposition") || "";
+                  if (!ct2.includes("text/html") || cd2.includes("attachment") || directRes.headers.get("Content-Length")) {
+                    clearTimeout(timeoutId);
+                    return directRes;
+                  }
+                } catch {}
+              }
+            }
             throw new Error(
               "External URL returned an HTML page instead of the APK file. Please use a direct download link. For MediaFire: open the share link, click download, copy the direct link (download*.mediafire.com). For Google Drive: ensure share link is correct and file is not restricted."
             );
@@ -430,6 +450,7 @@ export async function GET(
     }
 
     // External URL - proxy the download instead of redirecting (stays on-site, no new tab)
+    // On Cloudflare, some hosts block Workers IP and return HTML — fallback to redirect so download still works
     if (release.external_url) {
       const fileName = release.file_name || `Winlator@Frost-${release.version}.apk`;
       try {
@@ -441,14 +462,34 @@ export async function GET(
           release.file_type
         );
       } catch (err) {
-        console.error("External URL proxy error:", err);
-        return NextResponse.json(
-          {
-            success: false,
-            message: `Failed to download from external URL: ${err instanceof Error ? err.message : "Unknown error"}`,
-          },
-          { status: 502 }
-        );
+        console.error("External URL proxy error (Cloudflare may be blocked, falling back to redirect):", err);
+        // Fallback: redirect to direct URL (for Cloudflare-blocked hosts like MediaFire/Google Drive share links)
+        // This still allows download via redirect (new tab) when on-site proxy is blocked
+        try {
+          const resolved = await resolveExternalUrl(release.external_url);
+          // For generic direct links, redirect to resolved directUrl; for unresolved, redirect to original
+          const fallbackUrl = resolved.directUrl || release.external_url;
+          // Return JSON with redirect hint for client to handle as fallback, plus actual redirect
+          // Client download-button will try proxy first, on 502 it can fallback to window.open(fallbackUrl)
+          return NextResponse.json(
+            {
+              success: false,
+              message: `Failed to download from external URL: ${err instanceof Error ? err.message : "Unknown error"}`,
+              fallbackUrl,
+              provider: (resolved as any).provider || "unknown",
+            },
+            { status: 502, headers: { "Cache-Control": "no-store" } }
+          );
+        } catch {
+          return NextResponse.json(
+            {
+              success: false,
+              message: `Failed to download from external URL: ${err instanceof Error ? err.message : "Unknown error"}`,
+              fallbackUrl: release.external_url,
+            },
+            { status: 502, headers: { "Cache-Control": "no-store" } }
+          );
+        }
       }
     }
 
