@@ -62,8 +62,26 @@ async function proxyExternalUrl(
   }
 
   // Resolve third-party URL to direct link (Google Drive, MediaFire, Dropbox, etc.)
-  const resolved = await resolveExternalUrl(externalUrl);
+  // On Cloudflare Workers, MediaFire share pages are often blocked (returns HTML) — fallback to Render resolver (Node, not blocked)
+  let resolved = await resolveExternalUrl(externalUrl);
   let directUrl = resolved.directUrl;
+  const isCloudflare = !!process.env.CF_PAGES || !!process.env.CLOUDFLARE_PAGES || request.headers.get("cf-ray") || (globalThis as any).caches !== undefined;
+  if (resolved.provider === "mediafire_unresolved" && isCloudflare) {
+    try {
+      const renderResolver = `https://winlator-frost.onrender.com/api/resolve-external?url=${encodeURIComponent(externalUrl)}`;
+      const rController = new AbortController();
+      const rTid = setTimeout(() => rController.abort(), 12000);
+      const rRes = await fetch(renderResolver, { headers: { "User-Agent": "Mozilla/5.0" }, signal: rController.signal } as any);
+      clearTimeout(rTid);
+      if (rRes.ok) {
+        const j = await rRes.json().catch(() => null);
+        if (j && j.success && j.directUrl && j.directUrl !== externalUrl && j.directUrl.includes("mediafire.com")) {
+          directUrl = j.directUrl;
+          (resolved as any).provider = j.provider || "mediafire";
+        }
+      }
+    } catch {}
+  }
 
   // Mega.nz cannot be proxied server-side reliably
   if (resolved.provider === "mega") {
@@ -106,6 +124,7 @@ async function proxyExternalUrl(
       }
 
       // If MediaFire returned HTML again (unresolved), try to extract direct link before throwing (Cloudflare-friendly)
+      // On Cloudflare, share pages are often blocked - fallback to Render resolver for fresh direct link
       if (ct.includes("text/html") && !ct.includes("application/vnd.android") && attempt === 0) {
         const cd = res.headers.get("Content-Disposition") || "";
         if (!cd.includes("attachment") && !url.match(/\.(apk|zip|rar)(\?|$)/i)) {
@@ -128,6 +147,33 @@ async function proxyExternalUrl(
                   if (!ct2.includes("text/html") || cd2.includes("attachment") || directRes.headers.get("Content-Length")) {
                     clearTimeout(timeoutId);
                     return directRes;
+                  }
+                } catch {}
+              }
+              // Cloudflare fallback: ask Render (Node, not blocked) to resolve share link to direct link, then proxy on-site
+              if (isCloudflare) {
+                try {
+                  const renderResolver = `https://winlator-frost.onrender.com/api/resolve-external?url=${encodeURIComponent(externalUrl)}`;
+                  const rCtrl = new AbortController();
+                  const rTid = setTimeout(() => rCtrl.abort(), 10000);
+                  const rRes = await fetch(renderResolver, { headers: { "User-Agent": "Mozilla/5.0" }, signal: rCtrl.signal } as any);
+                  clearTimeout(rTid);
+                  if (rRes.ok) {
+                    const rJson = await rRes.json().catch(() => null);
+                    if (rJson && rJson.success && rJson.directUrl && rJson.directUrl.includes("mediafire.com") && rJson.directUrl !== url) {
+                      const rDirectRes = await fetch(rJson.directUrl, {
+                        headers: { ...headers, Referer: "https://www.mediafire.com/", Accept: "*/*" },
+                        signal: controller.signal,
+                        redirect: "follow",
+                        cf: { cacheTtl: 0, cacheEverything: false },
+                      } as any);
+                      const rCt = rDirectRes.headers.get("Content-Type") || "";
+                      const rCd = rDirectRes.headers.get("Content-Disposition") || "";
+                      if (!rCt.includes("text/html") || rCd.includes("attachment") || rDirectRes.headers.get("Content-Length")) {
+                        clearTimeout(timeoutId);
+                        return rDirectRes;
+                      }
+                    }
                   }
                 } catch {}
               }
