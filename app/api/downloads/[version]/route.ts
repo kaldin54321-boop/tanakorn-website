@@ -67,16 +67,16 @@ async function proxyExternalUrl(
   // This keeps download on-site with progress bar and uses fresh direct link (not expired, resolved at download time)
   const isMediaFireShare = externalUrl.includes("mediafire.com/file/") || externalUrl.includes("mediafire.com/view/") || externalUrl.includes("mediafire.com/download/");
   const isMediaFireDirect = externalUrl.includes("download") && externalUrl.includes("mediafire.com");
-  // For any MediaFire URL on Cloudflare, prefer Render proxy for on-site (direct links expire, share links blocked)
-  // Use Render for share links always, and for direct links if they are download*.mediafire.com (temporary)
-  const shouldUseRenderForMediaFire = isCloudflare && (isMediaFireShare || isMediaFireDirect);
+  // For any MediaFire URL on Cloudflare, prefer Render proxy for on-site (direct links expire, share links blocked on Workers IP)
+  // Use Render for share links always, and for direct links if they are download*.mediafire.com (temporary) - ensures fresh link at download time
+  const shouldUseRenderForMediaFire = isCloudflare && (isMediaFireShare || isMediaFireDirect || externalUrl.includes("mediafire.com"));
   if (shouldUseRenderForMediaFire) {
-    // Try Render proxy-file with retries (Render free tier sleeps, needs 30-50s wake)
-    for (let attempt = 0; attempt < 2; attempt++) {
+    // Try Render proxy-file with retries (Render free tier sleeps, needs 30-60s wake, use 90s timeout)
+    for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const renderProxyUrl = `https://winlator-frost.onrender.com/api/proxy-file?url=${encodeURIComponent(externalUrl)}&filename=${encodeURIComponent(fileName)}`;
         const rController = new AbortController();
-        const rTid = setTimeout(() => rController.abort(), 60000);
+        const rTid = setTimeout(() => rController.abort(), 90000);
         const rHeaders: Record<string, string> = {};
         if (range) rHeaders["Range"] = range;
         const rRes = await fetch(renderProxyUrl, {
@@ -88,12 +88,18 @@ async function proxyExternalUrl(
           const contentLength = rRes.headers.get("Content-Length");
           const contentRange = rRes.headers.get("Content-Range");
           const contentType = rRes.headers.get("Content-Type") || fileType || "application/vnd.android.package-archive";
-          // If Render returned JSON error (e.g., still waking), retry
+          // If Render returned JSON error (e.g., still waking or failed to resolve), retry
           if (contentType.includes("application/json")) {
             const j = await rRes.clone().json().catch(() => null);
-            if (j && j.success === false && attempt === 0) {
-              await new Promise((r) => setTimeout(r, 2000));
+            if (j && j.success === false && attempt < 2) {
+              const delay = attempt === 0 ? 4000 : 8000;
+              console.warn(`Render proxy-file returned error for MediaFire, retrying after ${delay}ms:`, j?.message);
+              await new Promise((r) => setTimeout(r, delay));
               continue;
+            }
+            // If still error after retries, throw to trigger HTML error handling below (will show direct link message)
+            if (j && j.success === false) {
+              throw new Error(j.message || "Render proxy failed to fetch MediaFire file");
             }
           }
           const responseHeaders: Record<string, string> = {
@@ -128,22 +134,32 @@ async function proxyExternalUrl(
             status: rRes.status === 206 ? 206 : 200,
             headers: responseHeaders,
           });
-        } else if (rRes.status === 502 || rRes.status === 503) {
-          // Render may be waking (502/503), retry once after delay
-          if (attempt === 0) {
+        } else if (rRes.status === 502 || rRes.status === 503 || rRes.status === 504) {
+          // Render may be waking (502/503/504), retry with increasing delay
+          if (attempt < 2) {
+            const delay = attempt === 0 ? 5000 : 10000;
+            console.warn(`Render proxy-file for MediaFire returned ${rRes.status}, retrying after ${delay}ms`);
+            await new Promise((r) => setTimeout(r, delay));
+            continue;
+          }
+        } else if (!rRes.ok) {
+          const txt = await rRes.text().catch(() => "");
+          console.warn(`Render proxy-file for MediaFire returned ${rRes.status}: ${txt.slice(0, 200)}`);
+          if (attempt < 2) {
             await new Promise((r) => setTimeout(r, 3000));
             continue;
           }
         }
       } catch (e) {
-        console.warn(`Render proxy-file for MediaFire attempt ${attempt + 1} failed, ${attempt === 0 ? "retrying" : "falling back"}:`, e);
-        if (attempt === 0) {
-          await new Promise((r) => setTimeout(r, 2000));
+        console.warn(`Render proxy-file for MediaFire attempt ${attempt + 1} failed, ${attempt < 2 ? "retrying" : "falling back"}:`, e);
+        if (attempt < 2) {
+          const delay = attempt === 0 ? 5000 : 10000;
+          await new Promise((r) => setTimeout(r, delay));
           continue;
         }
       }
     }
-    console.warn("Render proxy-file for MediaFire failed after retries, falling back to normal resolve");
+    console.warn("Render proxy-file for MediaFire failed after 3 attempts, falling back to normal Workers resolve (may return HTML error)");
   }
 
   // Resolve third-party URL to direct link (Google Drive, MediaFire, Dropbox, etc.)

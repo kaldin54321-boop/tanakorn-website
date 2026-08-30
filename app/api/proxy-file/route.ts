@@ -33,19 +33,23 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, message: "Invalid URL" }, { status: 400 });
     }
 
-    // If URL is a share link (MediaFire/Google Drive), resolve to direct link first (on Render, not blocked)
+    // If URL is a share link (MediaFire/Google Drive), resolve to direct link first (on Render, not blocked, fresh at request time)
     let fetchUrl = decoded;
+    let resolvedProvider: string | null = null;
     try {
       const resolved = await resolveExternalUrl(decoded);
-      // If resolved to a different direct URL (e.g., share -> download*.mediafire.com or drive uc?export=download), use it
-      // For MediaFire, the direct link is temporary but fresh at request time, so not expired
       if (resolved.directUrl && resolved.directUrl !== decoded && resolved.provider !== "generic") {
         fetchUrl = resolved.directUrl;
+        resolvedProvider = resolved.provider;
       } else if (resolved.provider === "generic" && decoded.includes("mediafire.com/file/")) {
-        // Fallback: if generic but still a share link, keep original and let fetch handle HTML extraction below
         fetchUrl = decoded;
+      } else if (resolved.directUrl) {
+        fetchUrl = resolved.directUrl;
+        resolvedProvider = resolved.provider;
       }
     } catch {}
+    // If still a MediaFire share link and not resolved to direct, try to keep original for HTML extraction below
+    // The HTML extraction below will handle share links that weren't resolved
 
     const range = request.headers.get("range") || undefined;
     const headers: Record<string, string> = {
