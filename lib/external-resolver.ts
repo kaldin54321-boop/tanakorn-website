@@ -81,9 +81,7 @@ async function resolveMediaFire(url: string): Promise<ResolvedExternal | null> {
       },
       signal: controller.signal,
       redirect: "follow",
-      // Cloudflare Workers need cf cache bypass for fresh HTML
-      cf: { cacheTtl: 0, cacheEverything: false } as any,
-    });
+    } as any);
     clearTimeout(tid);
     if (!res.ok) return null;
     const html = await res.text();

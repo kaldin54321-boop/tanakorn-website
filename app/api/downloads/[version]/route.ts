@@ -121,8 +121,7 @@ async function proxyExternalUrl(
                     headers: { ...headers, Referer: "https://www.mediafire.com/", Accept: "*/*" },
                     signal: controller.signal,
                     redirect: "follow",
-                    cf: { cacheTtl: 0, cacheEverything: false } as any,
-                  });
+                  } as any);
                   const ct2 = directRes.headers.get("Content-Type") || "";
                   const cd2 = directRes.headers.get("Content-Disposition") || "";
                   if (!ct2.includes("text/html") || cd2.includes("attachment") || directRes.headers.get("Content-Length")) {
