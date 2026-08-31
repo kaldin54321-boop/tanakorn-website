@@ -474,19 +474,19 @@ create policy "allow all" on page_views for all using (true) with check (true);`
             </div>
             <div className="analytics-card">
               <h3>By Browser</h3>
-              {analytics.byBrowser.length === 0 ? <small>No data</small> : analytics.byBrowser.slice(0, 5).map((b) => (
+              {analytics.byBrowser.length === 0 ? <small>No data</small> : analytics.byBrowser.slice(0, 5).map((b: { name: string; count: number }) => (
                 <div key={b.name} className="analytics-row"><span>{b.name}</span><span>{b.count}</span></div>
               ))}
             </div>
             <div className="analytics-card">
               <h3>By OS</h3>
-              {analytics.byOS.length === 0 ? <small>No data</small> : analytics.byOS.slice(0, 5).map((o) => (
+              {analytics.byOS.length === 0 ? <small>No data</small> : analytics.byOS.slice(0, 5).map((o: { name: string; count: number }) => (
                 <div key={o.name} className="analytics-row"><span>{o.name}</span><span>{o.count}</span></div>
               ))}
             </div>
             <div className="analytics-card">
               <h3>Top Locations</h3>
-              {analytics.topCountries.length === 0 ? <small>No data</small> : analytics.topCountries.slice(0, 10).map((c, i) => (
+              {analytics.topCountries.length === 0 ? <small>No data</small> : analytics.topCountries.slice(0, 10).map((c: { name: string; count: number }, i: number) => (
                 <div key={c.name} className="analytics-row"><span>{i + 1}. {c.name}</span><span>{c.count}</span></div>
               ))}
             </div>
@@ -497,7 +497,7 @@ create policy "allow all" on page_views for all using (true) with check (true);`
           <div style={{ marginTop: "16px" }}>
             <h3 style={{ fontSize: "13px", marginBottom: "8px" }}>Top 20 Countries</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "8px" }}>
-              {analytics.topCountries.slice(0, 20).map((c, i) => (
+              {analytics.topCountries.slice(0, 20).map((c: { name: string; count: number }, i: number) => (
                 <div key={c.name} style={{ display: "flex", justifyContent: "space-between", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }}>
                   <span>{i + 1}. {c.name}</span>
                   <strong>{c.count}</strong>
