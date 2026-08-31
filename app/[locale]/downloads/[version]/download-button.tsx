@@ -142,17 +142,23 @@ export default function DownloadButton({
           if (extracted && extracted !== fileName) setFileName(extracted);
         }
       }
-      let total: number | null = bytesTotal ?? fileSize;
+      let total: number | null = null;
       if (contentRange) {
         const m = contentRange.match(/bytes \d+-\d+\/(\d+)/);
         if (m) total = parseInt(m[1], 10);
-      } else if (contentLength) {
+      }
+      if (!total && contentLength) {
         const parsed = parseInt(contentLength, 10);
         if (!isNaN(parsed) && parsed > 0) total = parsed + resumeFrom;
       }
-      // Fallback to bytesTotal from info if headers didn't provide total
-      if (!total && bytesTotal) total = bytesTotal;
-      if (total && total > 0) setBytesTotal(total);
+      if (!total) total = bytesTotal ?? fileSize;
+      if (!total && fileSize) total = fileSize;
+      if (total && total > 0) {
+        setBytesTotal(total);
+      } else if (fileSize && fileSize > 0) {
+        total = fileSize;
+        setBytesTotal(total);
+      }
 
       const reader = res.body?.getReader();
       if (!reader) {

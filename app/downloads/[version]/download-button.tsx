@@ -137,16 +137,29 @@ export default function DownloadButton({
           if (extracted && extracted !== fileName) setFileName(extracted);
         }
       }
-      let total: number | null = bytesTotal ?? fileSize;
+      // Robust total: prefer Content-Range total, else Content-Length, else known fileSize/bytesTotal, else try to parse from Content-Disposition
+      let total: number | null = null;
       if (contentRange) {
         const m = contentRange.match(/bytes \d+-\d+\/(\d+)/);
         if (m) total = parseInt(m[1], 10);
-      } else if (contentLength) {
+      }
+      if (!total && contentLength) {
         const parsed = parseInt(contentLength, 10);
         if (!isNaN(parsed) && parsed > 0) total = parsed + resumeFrom;
       }
-      if (!total && bytesTotal) total = bytesTotal;
-      if (total && total > 0) setBytesTotal(total);
+      if (!total) total = bytesTotal ?? fileSize;
+      // If still no total but we have displaySize from props, use it
+      if (!total && fileSize) total = fileSize;
+      if (total && total > 0) {
+        setBytesTotal(total);
+      } else {
+        // Fallback: if total still unknown (e.g., chunked encoding on Render), try to use fileSize from DB
+        // For Render local files, fileSize should be known from DB, use it
+        if (fileSize && fileSize > 0) {
+          total = fileSize;
+          setBytesTotal(total);
+        }
+      }
 
       const reader = res.body?.getReader();
       if (!reader) {

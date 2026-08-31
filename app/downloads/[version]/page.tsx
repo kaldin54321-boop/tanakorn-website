@@ -6,6 +6,7 @@ import {
 } from "@/lib/releases";
 
 import DownloadButton from "./download-button";
+import ShareButtons from "@/app/components/ShareButtons";
 
 export async function generateStaticParams() {
   try {
@@ -139,6 +140,7 @@ export default async function ReleasePage({
           {release.name}
         </h1>
 
+        <ShareButtons url={`/downloads/${release.version}`} title={release.name} text={`Winlator@Frost ${release.version} - ${release.name}`} />
 
         <p className="downloads-subtitle">
           Release v{release.version}

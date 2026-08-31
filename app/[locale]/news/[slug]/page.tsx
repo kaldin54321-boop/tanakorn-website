@@ -3,6 +3,7 @@ import { getPublicNews } from "@/lib/news";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { locales } from "@/lib/i18n/config";
 import { parseNewsContent } from "@/lib/news-helpers";
+import ShareButtons from "@/app/components/ShareButtons";
 
 export async function generateStaticParams() {
   try {
@@ -44,6 +45,7 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ lo
       <header className="article-header">
         <div><span>{article.category || dict.news.general}</span><small>{formatNewsDate(article.published_at || article.created_at, locale)}</small></div>
         <h1>{article.title}</h1>
+        <ShareButtons url={`/${locale}/news/${article.slug}`} title={article.title} text={article.excerpt || article.title} />
       </header>
       {article.image_url && (
         <div style={{ marginTop: 24, borderRadius: 16, overflow: "hidden", border: "1px solid var(--border)" }}>

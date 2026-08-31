@@ -5,6 +5,7 @@ import {
 } from "@/lib/news";
 
 import { parseNewsContent } from "@/lib/news-helpers";
+import ShareButtons from "@/app/components/ShareButtons";
 
 export async function generateStaticParams() {
   // For Cloudflare Pages static export (CF_PAGES=1), pre-generate existing slugs at build time
@@ -174,6 +175,8 @@ export default async function NewsArticlePage({
         <h1>
           {article.title}
         </h1>
+
+        <ShareButtons url={`/news/${article.slug}`} title={article.title} text={article.excerpt || article.title} />
 
       </header>
 

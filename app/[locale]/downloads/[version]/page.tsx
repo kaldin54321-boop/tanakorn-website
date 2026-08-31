@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPublicReleases } from "@/lib/releases";
 import DownloadButton from "./download-button";
+import ShareButtons from "@/app/components/ShareButtons";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { locales } from "@/lib/i18n/config";
 
@@ -43,6 +44,7 @@ export default async function ReleasePage({ params }: { params: Promise<{ locale
       <section className="downloads-hero">
         <p className="downloads-eyebrow">{dict.common.winlatorFrost}</p>
         <h1>{release.name}</h1>
+        <ShareButtons url={`/${locale}/downloads/${release.version}`} title={release.name} text={`${release.name} v${release.version}`} />
         <p className="downloads-subtitle">{dict.releaseDetail.releaseVersion}{release.version}</p>
       </section>
       <section className="latest-release">

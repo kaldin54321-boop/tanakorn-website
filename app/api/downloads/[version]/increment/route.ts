@@ -18,10 +18,21 @@ export async function GET(request: Request, context: RouteContext) {
   const version = decodeURIComponent(rawVersion);
   if (!version) return NextResponse.json({ success: false, message: "Version required" }, { status: 400 });
   const supabase = await createClient();
+  // Try public count via RPC that sums releases + download_events (for public fallback)
+  const { data: rpcCount, error: rpcErr } = await (supabase as any).rpc("get_public_download_count", { p_version: version });
+  if (!rpcErr && typeof rpcCount === "number") {
+    return NextResponse.json({ success: true, download_count: rpcCount }, { headers: { "Cache-Control": "no-store, no-cache, must-revalidate", Pragma: "no-cache" } });
+  }
   const { data, error } = await supabase.from("releases").select("download_count").eq("version", version).maybeSingle();
   if (error || !data) return NextResponse.json({ success: false, message: "Release not found" }, { status: 404 });
+  // Add fallback download_events count if RPC not available
+  let extra = 0;
+  try {
+    const { count } = await supabase.from("download_events").select("id", { count: "exact", head: true }).eq("version", version);
+    extra = count ?? 0;
+  } catch {}
   return NextResponse.json(
-    { success: true, download_count: (data as any).download_count ?? 0 },
+    { success: true, download_count: ((data as any).download_count ?? 0) + extra },
     { headers: { "Cache-Control": "no-store, no-cache, must-revalidate", Pragma: "no-cache" } }
   );
 }
@@ -83,11 +94,27 @@ export async function POST(request: Request, context: RouteContext) {
     .eq("id", release.id);
 
   if (updateError) {
-    // If anon update failed due to RLS, retry with service_role if available
+    // If anon update failed due to RLS, try service_role, then fallback to public download_events table (counts for all users)
     if (serviceSupabase && supabaseForWrite === supabaseAnon && (updateError.code === "42501" || updateError.message.toLowerCase().includes("policy") || updateError.message.toLowerCase().includes("permission"))) {
       const { error: updateError2 } = await serviceSupabase.from("releases").update({ download_count: newCount }).eq("id", release.id);
       if (!updateError2) return NextResponse.json({ success: true, download_count: newCount }, { headers: { "Cache-Control": "no-store" } });
     }
+    // Fallback for public users when RLS blocks and no service_role: insert into download_events (public)
+    try {
+      const anonForEvents = await createClient();
+      const { error: insertErr } = await anonForEvents.from("download_events").insert({ version });
+      if (!insertErr) {
+        // Return sum of releases download_count + download_events count
+        const { data: fresh } = await anonForEvents.from("releases").select("download_count").eq("id", release.id).maybeSingle();
+        let extra = 0;
+        try {
+          const { count } = await anonForEvents.from("download_events").select("id", { count: "exact", head: true }).eq("version", version);
+          extra = count ?? 0;
+        } catch {}
+        const total = ((fresh as any)?.download_count ?? release.download_count ?? 0) + extra;
+        return NextResponse.json({ success: true, download_count: total }, { headers: { "Cache-Control": "no-store" } });
+      }
+    } catch {}
     if (updateError.code === "42703" || updateError.message.includes("download_count")) {
       return NextResponse.json({ success: true, download_count: newCount, warning: "download_count column missing, create it via SQL: run supabase-download-count.sql in Supabase SQL Editor" }, { headers: { "Cache-Control": "no-store" } });
     }
