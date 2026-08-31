@@ -782,7 +782,8 @@ body {
 }
 
 .footer-brand {
-  max-width: 300px;
+  max-width: 360px;
+  flex: 1;
 }
 
 .footer-brand p {

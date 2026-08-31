@@ -45,8 +45,9 @@ export default function Footer({ locale = "en", dict }: Props) {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.02 3.02 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.02 3.02 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.02 3.02 0 002.122 2.136c1.872.505 9.377.505 9.377.505s7.505 0 9.377-.505a3.02 3.02 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
             </a>
           </div>
-          <div style={{ marginTop: 14, fontSize: 13, color: "var(--muted)", lineHeight: 1.6 }}>
-            ติดต่องานได้ที่ (e-mail): <a href="mailto:haikalmuhammadin@gmail.com" style={{ color: "var(--frost)", textDecoration: "underline", wordBreak: "break-all" }}>haikalmuhammadin@gmail.com</a>
+          <div style={{ marginTop: 14, display: "flex", flexWrap: "nowrap", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--muted)", lineHeight: 1.6, whiteSpace: "nowrap" }}>
+            <span style={{ whiteSpace: "nowrap", flexShrink: 0 }}>ติดต่องานได้ที่ (e-mail):</span>
+            <a href="mailto:haikalmuhammadin@gmail.com" style={{ color: "var(--frost)", textDecoration: "underline", whiteSpace: "nowrap", flexShrink: 0 }}>haikalmuhammadin@gmail.com</a>
           </div>
 
         </div>
