@@ -426,7 +426,7 @@ const ru: Dictionary = {
 
 const tr: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "Yükleniyor...", error: "Hata", downloads: "indirme", apk: "APK", external: "Harici", unknownSize: "Bilinmeyen boyut", released: "Yayınlandı" ,
-    donationText: "Biliyor muydunuz? Bu web sitesini ve Winlator@Frost APK'sını ayakta tutmak ciddi bir maliyet gerektiriyor. Hizmetimizi değerli buluyorsanız, bu web sitesinin ve Winlator@Frost APK'sının erişilebilir kalmasına ve aktif olarak güncellenmesine yardımcı olmak için küçük bir bağış yapmayı düşünebilirsiniz. Sadece ₺170 bile büyük bir fark yaratır!"
+    donationText: "Biliyor muydunuz? Bu web sitesini ve Winlator@Frost APK'sını ayakta tutmak ciddi bir maliyet gerektiriyor. Hizmetimizi değerli buluyorsanız, bu web sitesinin ve Winlator@Frost APK'sının erişilebilir kalmasına ve aktif olarak güncellenmesine yardımcı olmak için küçük bir bağış yapmayı düşünebilirsiniz. Sadece ₺100 bile büyük bir fark yaratır!"
   },
   nav: { home: "Ana Sayfa", news: "Haberler", downloads: "İndirmeler", download: "İndir", toggleMenu: "Menüyü değiştir" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "WINDOWS DENEYİMİ · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Android'de performans, esneklik ve gelişmiş Windows uygulama desteği için oluşturulmuş gelişmiş özelleştirilmiş Winlator deneyimi.", downloadLatest: "En sonu indir", supportFrost: "Frost'u destekle" },
@@ -473,7 +473,7 @@ const tr: Dictionary = {
 
 const ko: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "로딩 중...", error: "오류", downloads: "다운로드", apk: "APK", external: "외부", unknownSize: "알 수 없는 크기", released: "출시" ,
-    donationText: "알고 계셨나요? 이 웹사이트와 Winlator@Frost APK를 유지하는 데는 많은 비용이 듭니다. 저희 서비스가 도움이 되었다면, 이 웹사이트와 Winlator@Frost APK가 계속 제공되고 활발히 업데이트될 수 있도록 소액 후원을 고려해 주세요. 단 ₩7,000만으로도 큰 도움이 됩니다!"
+    donationText: "알고 계셨나요? 이 웹사이트와 Winlator@Frost APK를 유지하는 데는 많은 비용이 듭니다. 저희 서비스가 도움이 되었다면, 이 웹사이트와 Winlator@Frost APK가 계속 제공되고 활발히 업데이트될 수 있도록 소액 후원을 고려해 주세요. 단 ₩5,000만으로도 큰 도움이 됩니다!"
   },
   nav: { home: "홈", news: "뉴스", downloads: "다운로드", download: "다운로드", toggleMenu: "메뉴 전환" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "WINDOWS 경험 · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Android에서 성능, 유연성 및 고급 Windows 앱 지원을 위해 구축된 고급 맞춤형 Winlator 경험.", downloadLatest: "최신 다운로드", supportFrost: "Frost 후원" },
@@ -520,7 +520,7 @@ const ko: Dictionary = {
 
 const ja: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "読み込み中...", error: "エラー", downloads: "ダウンロード", apk: "APK", external: "外部", unknownSize: "不明なサイズ", released: "リリース" ,
-    donationText: "ご存知ですか？このウェブサイトとWinlator@Frost APKの運営・維持には多額の費用がかかっています。私たちのサービスに価値を感じていただけたなら、このウェブサイトとWinlator@Frost APKを利用可能に保ち、積極的にアップデートし続けるために、少額のご寄付をご検討ください。わずか¥750でも大きな支えになります！"
+    donationText: "ご存知ですか？このウェブサイトとWinlator@Frost APKの運営・維持には多額の費用がかかっています。私たちのサービスに価値を感じていただけたなら、このウェブサイトとWinlator@Frost APKを利用可能に保ち、積極的にアップデートし続けるために、少額のご寄付をご検討ください。わずか¥500でも大きな支えになります！"
   },
   nav: { home: "ホーム", news: "ニュース", downloads: "ダウンロード", download: "ダウンロード", toggleMenu: "メニュー切替" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "WINDOWS 体験 · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Androidでパフォーマンス、柔軟性、高度なWindowsアプリサポートのために構築された高度なカスタムWinlator体験。", downloadLatest: "最新をダウンロード", supportFrost: "Frostを支援" },
@@ -614,7 +614,7 @@ const zh: Dictionary = {
 
 const vi: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "Đang tải...", error: "Lỗi", downloads: "lượt tải", apk: "APK", external: "Ngoài", unknownSize: "Kích thước không xác định", released: "Phát hành" ,
-    donationText: "Bạn có biết? Việc duy trì trang web này và APK Winlator@Frost tốn rất nhiều chi phí. Nếu bạn thấy dịch vụ của chúng tôi hữu ích, hãy cân nhắc quyên góp một khoản nhỏ để giúp trang web này và APK Winlator@Frost luôn khả dụng và được cập nhật thường xuyên. Chỉ 125.000₫ cũng tạo nên sự khác biệt lớn!"
+    donationText: "Bạn có biết? Việc duy trì trang web này và APK Winlator@Frost tốn rất nhiều chi phí. Nếu bạn thấy dịch vụ của chúng tôi hữu ích, hãy cân nhắc quyên góp một khoản nhỏ để giúp trang web này và APK Winlator@Frost luôn khả dụng và được cập nhật thường xuyên. Chỉ 100.000₫ cũng tạo nên sự khác biệt lớn!"
   },
   nav: { home: "Trang chủ", news: "Tin tức", downloads: "Tải xuống", download: "Tải xuống", toggleMenu: "Chuyển menu" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "TRẢI NGHIỆM WINDOWS · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Trải nghiệm Winlator tùy chỉnh nâng cao được xây dựng cho hiệu suất, linh hoạt và hỗ trợ ứng dụng Windows nâng cao trên Android.", downloadLatest: "Tải bản mới nhất", supportFrost: "Ủng hộ Frost" },
@@ -661,7 +661,7 @@ const vi: Dictionary = {
 
 const th: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "กำลังโหลด...", error: "ข้อผิดพลาด", downloads: "ดาวน์โหลด", apk: "APK", external: "ภายนอก", unknownSize: "ขนาดไม่ทราบ", released: "เผยแพร่เมื่อ" ,
-    donationText: "คุณรู้หรือไม่? การดูแลเว็บไซต์นี้และไฟล์ APK ของ Winlator@Frost มีค่าใช้จ่ายค่อนข้างสูง หากคุณเห็นคุณค่าในบริการของเรา โปรดพิจารณาบริจาคเล็กๆ น้อยๆ เพื่อช่วยให้เว็บไซต์นี้และ APK ของ Winlator@Frost ยังคงพร้อมใช้งานและได้รับการอัปเดตอย่างต่อเนื่อง แม้เพียง 180 บาท ก็สร้างความแตกต่างได้อย่างมาก!"
+    donationText: "คุณรู้หรือไม่? การดูแลเว็บไซต์นี้และไฟล์ APK ของ Winlator@Frost มีค่าใช้จ่ายค่อนข้างสูง หากคุณเห็นคุณค่าในบริการของเรา โปรดพิจารณาบริจาคเล็กๆ น้อยๆ เพื่อช่วยให้เว็บไซต์นี้และ APK ของ Winlator@Frost ยังคงพร้อมใช้งานและได้รับการอัปเดตอย่างต่อเนื่อง แม้เพียง 100 บาท ก็สร้างความแตกต่างได้อย่างมาก!"
   },
   nav: { home: "หน้าแรก", news: "ข่าวสาร", downloads: "ดาวน์โหลด", download: "ดาวน์โหลด", toggleMenu: "สลับเมนู" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "ประสบการณ์ WINDOWS · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "ประสบการณ์ Winlator ขั้นสูงที่ปรับแต่งเพื่อประสิทธิภาพ ความยืดหยุ่น และการรองรับแอป Windows ขั้นสูงบน Android", downloadLatest: "ดาวน์โหลดเวอร์ชันล่าสุด", supportFrost: "สนับสนุน Frost" },
@@ -708,7 +708,7 @@ const th: Dictionary = {
 
 const id: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "Memuat...", error: "Kesalahan", downloads: "unduhan", apk: "APK", external: "Eksternal", unknownSize: "Ukuran tidak diketahui", released: "Dirilis" ,
-    donationText: "Tahukah Anda? Membangun dan memelihara situs web ini serta APK Winlator@Frost membutuhkan biaya yang tidak sedikit. Jika Anda merasa layanan kami bermanfaat, pertimbangkan untuk memberikan donasi kecil agar situs web ini dan APK Winlator@Frost tetap tersedia dan terus diperbarui secara aktif. Bahkan Rp80.000 pun sangat berarti!"
+    donationText: "Tahukah Anda? Membangun dan memelihara situs web ini serta APK Winlator@Frost membutuhkan biaya yang tidak sedikit. Jika Anda merasa layanan kami bermanfaat, pertimbangkan untuk memberikan donasi kecil agar situs web ini dan APK Winlator@Frost tetap tersedia dan terus diperbarui secara aktif. Bahkan Rp50.000 pun sangat berarti!"
   },
   nav: { home: "Beranda", news: "Berita", downloads: "Unduhan", download: "Unduh", toggleMenu: "Alihkan menu" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "PENGALAMAN WINDOWS · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Pengalaman Winlator canggih yang disesuaikan untuk performa, fleksibilitas, dan dukungan aplikasi Windows lanjutan di Android.", downloadLatest: "Unduh terbaru", supportFrost: "Dukung Frost" },

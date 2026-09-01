@@ -97,13 +97,15 @@ export default async function Home() {
 
           </div>
 
-          <div className="hero-support donation-card">
+          <div className="hero-support">
             <p className="donation-card-title">Support Frost</p>
-            <p className="donation-card-text">Did you know? Building this website and the Winlator@Frost APK typically costs a lot of money. If you find value in our service, please consider making a small donation to help keep this website and the Winlator@Frost APK available and actively updated. Even $5 makes a huge difference!</p>
-            <div className="support-buttons">
-              <a href="https://ko-fi.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button kofi">Ko-fi</a>
-              <a href="https://buymeacoffee.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button bmc">Buy Me a Coffee</a>
-              <a href="https://paypal.me/MUHAMMADINISMAIL" target="_blank" rel="noopener noreferrer" className="support-button paypal">PayPal</a>
+            <div className="donation-card">
+              <p className="donation-card-text">Did you know? Building this website and the Winlator@Frost APK typically costs a lot of money. If you find value in our service, please consider making a small donation to help keep this website and the Winlator@Frost APK available and actively updated. Even $5 makes a huge difference!</p>
+              <div className="support-buttons">
+                <a href="https://ko-fi.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button kofi">Ko-fi</a>
+                <a href="https://buymeacoffee.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button bmc">Buy Me a Coffee</a>
+                <a href="https://paypal.me/MUHAMMADINISMAIL" target="_blank" rel="noopener noreferrer" className="support-button paypal">PayPal</a>
+              </div>
             </div>
           </div>
 
