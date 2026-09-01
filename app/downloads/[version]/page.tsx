@@ -295,8 +295,9 @@ export default async function ReleasePage({
                   initialDownloadCount={(release as any).download_count ?? 0}
                 />
 
-                <div className="view-release-support">
-                  <p>Support Frost — Help keep it free</p>
+                <div className="view-release-support donation-card">
+                  <p className="donation-card-title">Support Frost — Help keep it free</p>
+                  <p className="donation-card-text">Did you know? Building this website and the Winlator@Frost APK typically costs a lot of money. If you find value in our service, please consider making a small donation to help keep this website and the Winlator@Frost APK available and actively updated. Even $5 makes a huge difference!</p>
                   <div className="support-buttons">
                     <a href="https://ko-fi.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button kofi">Ko-fi</a>
                     <a href="https://buymeacoffee.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button bmc">Buy Me a Coffee</a>

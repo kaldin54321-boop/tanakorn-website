@@ -97,8 +97,9 @@ export default async function Home() {
 
           </div>
 
-          <div className="hero-support">
-            <p>Support Frost</p>
+          <div className="hero-support donation-card">
+            <p className="donation-card-title">Support Frost</p>
+            <p className="donation-card-text">Did you know? Building this website and the Winlator@Frost APK typically costs a lot of money. If you find value in our service, please consider making a small donation to help keep this website and the Winlator@Frost APK available and actively updated. Even $5 makes a huge difference!</p>
             <div className="support-buttons">
               <a href="https://ko-fi.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button kofi">Ko-fi</a>
               <a href="https://buymeacoffee.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button bmc">Buy Me a Coffee</a>
@@ -400,6 +401,43 @@ export default async function Home() {
       })}
     </div>
   )}
+
+</section>
+
+<section className="sysreq-section">
+
+  <div className="section-heading">
+    <p>SYSTEM REQUIREMENTS</p>
+    <h2>Winlator@Frost System Requirements</h2>
+  </div>
+
+  <div className="sysreq-grid">
+
+    <div className="sysreq-card">
+      <h3>Minimum requirements:</h3>
+      <ul>
+        <li><strong>Android:</strong> 8.0</li>
+        <li><strong>Architecture:</strong> At least armeabi-v7a are supported, x86 are not supported</li>
+        <li><strong>DPI:</strong> nodpi</li>
+        <li><strong>RAM:</strong> 3 GB/4 GB</li>
+        <li><strong>CPU:</strong> Snapdragon 4xx, 4 Gen 1 until 4 Gen 5 or 6xx series are a minimum, for other than Snapdragon chipset are still compatible (if MediaTek, Helio P and G series and Dimensity 6000 series are a minimum)</li>
+        <li><strong>GPU:</strong> Adreno 6xx are a very minimum for the Snapdragon chipset, for other GPUs than Adreno are still compatible using VirGL</li>
+      </ul>
+    </div>
+
+    <div className="sysreq-card sysreq-card-recommended">
+      <h3>Recommended requirements:</h3>
+      <ul>
+        <li><strong>Android:</strong> 12.0 and above</li>
+        <li><strong>Architecture:</strong> Arm64-v8a</li>
+        <li><strong>DPI:</strong> nodpi</li>
+        <li><strong>RAM:</strong> 6 GB/8 GB or 12 GB and above</li>
+        <li><strong>CPU:</strong> Snapdragon 6 Gen 1 until 6 Gen 4, 7 Gen 1 until 7 Gen 4 or 8 Gen 1 until 8 Elite series chipset are recommended, for the other chipset than Snapdragon are still compatible (for MediaTek Dimensity 7000, 8000 and 9000 series are recommended)</li>
+        <li><strong>GPU:</strong> Adreno 7xx and 8xx are recommended for Snapdragon chipset, for the other GPUs other than Adreno are still compatible to use VirGL and the Vortek are also supported in partial of Mali device</li>
+      </ul>
+    </div>
+
+  </div>
 
 </section>
 

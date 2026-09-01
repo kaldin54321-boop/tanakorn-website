@@ -50,8 +50,9 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <div className="hero-actions">
             <Link href={latestRelease ? `/${loc}/downloads/${latestRelease.version}` : `/${loc}/downloads`} className="button-primary">{dict.hero.downloadLatest}</Link>
           </div>
-          <div className="hero-support">
-            <p>{dict.hero.supportFrost}</p>
+          <div className="hero-support donation-card">
+            <p className="donation-card-title">{dict.hero.supportFrost}</p>
+            <p className="donation-card-text">{dict.common.donationText}</p>
             <div className="support-buttons">
               <a href="https://ko-fi.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button kofi">Ko-fi</a>
               <a href="https://buymeacoffee.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button bmc">Buy Me a Coffee</a>
@@ -135,6 +136,34 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             })}
           </div>
         )}
+      </section>
+
+      <section className="sysreq-section">
+        <div className="section-heading"><p>{dict.home.sysReqEyebrow}</p><h2>{dict.home.sysReqTitle}</h2></div>
+        <div className="sysreq-grid">
+          <div className="sysreq-card">
+            <h3>{dict.home.sysReqMinimum}</h3>
+            <ul>
+              <li><strong>{dict.home.sysReqAndroid}:</strong> {dict.home.sysReqMinAndroid}</li>
+              <li><strong>{dict.home.sysReqArchitecture}:</strong> {dict.home.sysReqMinArch}</li>
+              <li><strong>{dict.home.sysReqDpi}:</strong> {dict.home.sysReqMinDpi}</li>
+              <li><strong>{dict.home.sysReqRam}:</strong> {dict.home.sysReqMinRam}</li>
+              <li><strong>{dict.home.sysReqCpu}:</strong> {dict.home.sysReqMinCpu}</li>
+              <li><strong>{dict.home.sysReqGpu}:</strong> {dict.home.sysReqMinGpu}</li>
+            </ul>
+          </div>
+          <div className="sysreq-card sysreq-card-recommended">
+            <h3>{dict.home.sysReqRecommended}</h3>
+            <ul>
+              <li><strong>{dict.home.sysReqAndroid}:</strong> {dict.home.sysReqRecAndroid}</li>
+              <li><strong>{dict.home.sysReqArchitecture}:</strong> {dict.home.sysReqRecArch}</li>
+              <li><strong>{dict.home.sysReqDpi}:</strong> {dict.home.sysReqRecDpi}</li>
+              <li><strong>{dict.home.sysReqRam}:</strong> {dict.home.sysReqRecRam}</li>
+              <li><strong>{dict.home.sysReqCpu}:</strong> {dict.home.sysReqRecCpu}</li>
+              <li><strong>{dict.home.sysReqGpu}:</strong> {dict.home.sysReqRecGpu}</li>
+            </ul>
+          </div>
+        </div>
       </section>
 
       <section className="faq-section">

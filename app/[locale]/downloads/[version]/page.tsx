@@ -70,8 +70,9 @@ export default async function ReleasePage({ params }: { params: Promise<{ locale
                   <p>APK • {release.architecture}{release.file_size !== null ? ` • ${formatFileSize(release.file_size, dict)}` : ""}</p>
                 </div>
                 <DownloadButton version={release.version} fileName={release.file_name || `Winlator@Frost-${release.version}.apk`} fileSize={release.file_size} isExternal={!!(release as any).external_url} externalUrl={(release as any).external_url || undefined} initialDownloadCount={(release as any).download_count ?? 0} locale={locale} />
-                <div className="view-release-support">
-                  <p>{dict.releaseDetail.supportHelp}</p>
+                <div className="view-release-support donation-card">
+                  <p className="donation-card-title">{dict.releaseDetail.supportHelp}</p>
+                  <p className="donation-card-text">{dict.common.donationText}</p>
                   <div className="support-buttons">
                     <a href="https://ko-fi.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button kofi">Ko-fi</a>
                     <a href="https://buymeacoffee.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button bmc">Buy Me a Coffee</a>
