@@ -1,4 +1,5 @@
 import ViewTracker from "./components/ViewTracker";
+import DonationDangerModal from "./components/DonationDangerModal";
 import "./globals.css";
 import { cookies, headers } from "next/headers";
 
@@ -17,6 +18,7 @@ export default async function RootLayout({
     <html lang={locale} dir={isRTL ? "rtl" : "ltr"}>
       <body>
         <ViewTracker />
+        <DonationDangerModal />
         {children}
       </body>
     </html>

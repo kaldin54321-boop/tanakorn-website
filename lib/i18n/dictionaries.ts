@@ -184,6 +184,18 @@ const en = {
     resumableShort: "Resumable download • Auto-resume on failure • Supports Range requests",
     unknown: "Unknown",
   },
+  dangerModal: {
+    eyebrow: "⚠ CRITICAL // SYSTEM NOTICE",
+    title: "Frost Project",
+    titleAccent: "At Risk",
+    text: "This project and website couldn't stay any longer as I have already spent a lot of money in building it, and currently I'm running out of the budget to resume/continue the development of this project and website. So, if you willing to help us to ensure this project and website are still on the track of it development progress, please kindly donate us some money. Even $5 are already valuable for us",
+    hint: "Your support keeps Winlator@Frost alive — thank you ❄",
+    secondaryEyebrow: "⚠ FINAL WARNING // CONFIRM DISMISS",
+    secondaryTitle: "Are you sure?",
+    secondaryText: "If you dismiss or refuse to donate us, maybe the Winlator@Frost development journey will be stopped very soon together with this website will be closed too until forever",
+    ok: "It's okay",
+    proceed: "Proceed to donate",
+  },
   language: {
     select: "Language",
   },
@@ -233,6 +245,18 @@ const de: Dictionary = {
   news: { title: "Neuigkeiten", desc: "Neueste Nachrichten, Ankündigungen und Entwicklungsupdates von Winlator@Frost.", noNewsTitle: "Keine Neuigkeiten verfügbar", noNewsDesc: "Derzeit gibt es keine veröffentlichten Winlator@Frost-Artikel.", readArticle: "ARTIKEL LESEN", articleNotFound: "Artikel nicht gefunden", articleNotFoundDesc: "Der angeforderte Winlator@Frost-Artikel konnte nicht gefunden werden.", backToNews: "ZURÜCK ZU NEUIGKEITEN", backToNewsArrow: "← Zurück zu Neuigkeiten", general: "ALLGEMEIN" },
   footer: { customizedDesc: "Ein angepasstes Winlator-Erlebnis für Android.", project: "Projekt", news: "Neuigkeiten", downloads: "Downloads", resources: "Ressourcen", updates: "Updates", releases: "Versionen", copyright: "Copyright © Frost Apps & Games Software Co., Ltd. 2023-2026.", thaiCompany: "บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด", thaiAddress: "อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569", allRights: "Alle Rechte vorbehalten.", builtWith: "Mit Frost gebaut ❄" },
   downloadButton: { downloadApk: "APK HERUNTERLADEN", downloads: "Downloads", external: "Extern", sizeDetected: "Größe wird beim Download ermittelt", resumable: "fortsetzbar", resumableDownload: "Fortsetzbarer Download", downloading: "Wird heruntergeladen...", paused: "Pausiert", completed: "Abgeschlossen", ready: "Bereit", pause: "Pause", resume: "Fortsetzen", cancel: "Abbrechen", downloadAgain: "Erneut herunterladen", resumableDesc: "Fortsetzbar • Fortschritt angezeigt • Pause/Fortsetzen unterstützt", oneClickDesc: "Ein Klick • Download auf der Seite • Keine Weiterleitung", proxiedDesc: "Über diese Website geleitet • Kein neuer Tab • Datei wird auf Gerätespeicher gespeichert • Unterstützt Range/Fortsetzen wenn Host erlaubt", resumableShort: "Fortsetzbar • Automatisches Fortsetzen bei Fehler • Unterstützt Range-Anfragen", unknown: "Unbekannt" },
+  dangerModal: {
+    eyebrow: "⚠ KRITISCH // SYSTEMHINWEIS",
+    title: "Frost-Projekt",
+    titleAccent: "in Gefahr",
+    text: "Dieses Projekt und diese Website können nicht mehr lange bestehen, da ich bereits viel Geld in den Aufbau investiert habe und mir derzeit das Budget fehlt, um die Entwicklung dieses Projekts und dieser Website fortzusetzen. Wenn Sie uns helfen möchten, sicherzustellen, dass dieses Projekt und diese Website weiterentwickelt werden, spenden Sie uns bitte etwas Geld. Schon €5 sind sehr wertvoll für uns",
+    hint: "Ihre Unterstützung hält Winlator@Frost am Leben — danke ❄",
+    secondaryEyebrow: "⚠ LETZTE WARNUNG // ABBRUCH BESTÄTIGEN",
+    secondaryTitle: "Sind Sie sicher?",
+    secondaryText: "Wenn Sie dies ablehnen oder uns keine Spende zukommen lassen, wird die Entwicklung von Winlator@Frost vielleicht sehr bald gestoppt und diese Website für immer geschlossen",
+    ok: "Schon okay",
+    proceed: "Weiter zur Spende",
+  },
   language: { select: "Sprache" },
 };
 
@@ -280,6 +304,18 @@ const fr: Dictionary = {
   news: { title: "Actualités", desc: "Dernières actualités, annonces et informations de développement de Winlator@Frost.", noNewsTitle: "Aucune actualité disponible", noNewsDesc: "Aucun article d'actualités publié pour le moment.", readArticle: "LIRE L'ARTICLE", articleNotFound: "Article non trouvé", articleNotFoundDesc: "L'article demandé n'a pas pu être trouvé.", backToNews: "RETOUR AUX ACTUALITÉS", backToNewsArrow: "← Retour aux actualités", general: "GÉNÉRAL" },
   footer: { customizedDesc: "Une expérience Winlator personnalisée pour Android.", project: "Projet", news: "Actualités", downloads: "Téléchargements", resources: "Ressources", updates: "Mises à jour", releases: "Versions", copyright: "Copyright © Frost Apps & Games Software Co., Ltd. 2023-2026.", thaiCompany: "บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด", thaiAddress: "อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569", allRights: "Tous droits réservés.", builtWith: "Construit avec Frost ❄" },
   downloadButton: { downloadApk: "TÉLÉCHARGER APK", downloads: "téléchargements", external: "Externe", sizeDetected: "Taille détectée au téléchargement", resumable: "reprenable", resumableDownload: "Téléchargement reprenable", downloading: "Téléchargement...", paused: "En pause", completed: "Terminé", ready: "Prêt", pause: "Pause", resume: "Reprendre", cancel: "Annuler", downloadAgain: "Télécharger à nouveau", resumableDesc: "Reprenable • Progression affichée • Pause/Reprise prise en charge", oneClickDesc: "Un clic • Téléchargement sur le site • Pas de redirection", proxiedDesc: "Relayé via ce site • Pas de nouvel onglet • Fichier enregistré sur l'appareil • Reprise prise en charge si l'hôte permet", resumableShort: "Reprenable • Reprise auto en cas d'échec • Requêtes Range prises en charge", unknown: "Inconnu" },
+  dangerModal: {
+    eyebrow: "⚠ CRITIQUE // AVIS SYSTÈME",
+    title: "Projet Frost",
+    titleAccent: "en danger",
+    text: "Ce projet et ce site web ne pourront plus continuer longtemps car j'ai déjà dépensé beaucoup d'argent pour le construire et je manque actuellement de budget pour poursuivre le développement de ce projet et de ce site. Si vous souhaitez nous aider à maintenir ce projet et ce site sur la voie du développement, merci de nous faire un don. Même €5 nous sont précieux",
+    hint: "Votre soutien garde Winlator@Frost en vie — merci ❄",
+    secondaryEyebrow: "⚠ DERNIER AVERTISSEMENT // CONFIRMER",
+    secondaryTitle: "Êtes-vous sûr ?",
+    secondaryText: "Si vous refusez ou rejetez notre demande de don, le développement de Winlator@Frost pourrait s'arrêter très bientôt et ce site web être fermé pour toujours",
+    ok: "C'est d'accord",
+    proceed: "Procéder au don",
+  },
   language: { select: "Langue" },
 };
 
@@ -327,6 +363,18 @@ const it: Dictionary = {
   news: { title: "Notizie", desc: "Ultime notizie, annunci e aggiornamenti di sviluppo da Winlator@Frost.", noNewsTitle: "Nessuna notizia disponibile", noNewsDesc: "Al momento non ci sono articoli pubblicati.", readArticle: "LEGGI ARTICOLO", articleNotFound: "Articolo non trovato", articleNotFoundDesc: "L'articolo richiesto non è stato trovato.", backToNews: "TORNA ALLE NOTIZIE", backToNewsArrow: "← Torna alle notizie", general: "GENERALE" },
   footer: { customizedDesc: "Un'esperienza Winlator personalizzata per Android.", project: "Progetto", news: "Notizie", downloads: "Download", resources: "Risorse", updates: "Aggiornamenti", releases: "Versioni", copyright: "Copyright © Frost Apps & Games Software Co., Ltd. 2023-2026.", thaiCompany: "บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด", thaiAddress: "อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569", allRights: "Tutti i diritti riservati.", builtWith: "Costruito con Frost ❄" },
   downloadButton: { downloadApk: "SCARICA APK", downloads: "download", external: "Esterno", sizeDetected: "Dimensione rilevata al download", resumable: "riprendibile", resumableDownload: "Download riprendibile", downloading: "Download in corso...", paused: "In pausa", completed: "Completato", ready: "Pronto", pause: "Pausa", resume: "Riprendi", cancel: "Annulla", downloadAgain: "Scarica di nuovo", resumableDesc: "Riprendibile • Progresso mostrato • Pausa/Riprendi supportati", oneClickDesc: "Un clic • Download sul sito • Nessun reindirizzamento", proxiedDesc: "Tramite questo sito • Nessuna nuova scheda • File salvato sul dispositivo • Supporta Range se host consente", resumableShort: "Riprendibile • Ripresa auto in caso di errore • Richieste Range supportate", unknown: "Sconosciuto" },
+  dangerModal: {
+    eyebrow: "⚠ CRITICO // AVVISO DI SISTEMA",
+    title: "Progetto Frost",
+    titleAccent: "a rischio",
+    text: "Questo progetto e questo sito non potranno rimanere a lungo perché ho già speso molti soldi per costruirlo e al momento ho esaurito il budget per continuare lo sviluppo di questo progetto e sito. Se volete aiutarci a mantenere questo progetto e sito sulla giusta traccia di sviluppo, per favore donateci qualcosa. Anche €5 sono già preziosi per noi",
+    hint: "Il vostro supporto tiene vivo Winlator@Frost — grazie ❄",
+    secondaryEyebrow: "⚠ ULTIMO AVVISO // CONFERMA CHIUSURA",
+    secondaryTitle: "Sei sicuro?",
+    secondaryText: "Se rifiuti o non ci doni, forse il percorso di sviluppo di Winlator@Frost si fermerà molto presto e questo sito verrà chiuso per sempre",
+    ok: "Va bene",
+    proceed: "Procedi alla donazione",
+  },
   language: { select: "Lingua" },
 };
 
@@ -374,6 +422,18 @@ const es: Dictionary = {
   news: { title: "Noticias", desc: "Últimas noticias, anuncios y actualizaciones de Winlator@Frost.", noNewsTitle: "No hay noticias disponibles", noNewsDesc: "No hay artículos publicados por el momento.", readArticle: "LEER ARTÍCULO", articleNotFound: "Artículo no encontrado", articleNotFoundDesc: "El artículo solicitado no se pudo encontrar.", backToNews: "VOLVER A NOTICIAS", backToNewsArrow: "← Volver a noticias", general: "GENERAL" },
   footer: { customizedDesc: "Una experiencia Winlator personalizada para Android.", project: "Proyecto", news: "Noticias", downloads: "Descargas", resources: "Recursos", updates: "Actualizaciones", releases: "Versiones", copyright: "Copyright © Frost Apps & Games Software Co., Ltd. 2023-2026.", thaiCompany: "บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด", thaiAddress: "อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569", allRights: "Todos los derechos reservados.", builtWith: "Construido con Frost ❄" },
   downloadButton: { downloadApk: "DESCARGAR APK", downloads: "descargas", external: "Externo", sizeDetected: "Tamaño detectado al descargar", resumable: "reanudar", resumableDownload: "Descarga reanudable", downloading: "Descargando...", paused: "En pausa", completed: "Completado", ready: "Listo", pause: "Pausa", resume: "Reanudar", cancel: "Cancelar", downloadAgain: "Descargar de nuevo", resumableDesc: "Reanudable • Progreso mostrado • Pausa/Reanudar", oneClickDesc: "Un clic • Descarga en el sitio • Sin redirección", proxiedDesc: "A través de este sitio • Sin nueva pestaña • Archivo guardado en dispositivo • Soporta Range si host permite", resumableShort: "Reanudable • Reanudación auto si falla • Peticiones Range", unknown: "Desconocido" },
+  dangerModal: {
+    eyebrow: "⚠ CRÍTICO // AVISO DEL SISTEMA",
+    title: "Proyecto Frost",
+    titleAccent: "en riesgo",
+    text: "Este proyecto y sitio web no podrán permanecer mucho más tiempo ya que he gastado mucho dinero en construirlo y actualmente me estoy quedando sin presupuesto para continuar el desarrollo de este proyecto y sitio. Si deseas ayudarnos a mantener este proyecto y sitio en su progreso de desarrollo, por favor dónenos algo de dinero. Incluso $5 ya son valiosos para nosotros",
+    hint: "Tu apoyo mantiene vivo a Winlator@Frost — gracias ❄",
+    secondaryEyebrow: "⚠ ÚLTIMA ADVERTENCIA // CONFIRMAR",
+    secondaryTitle: "¿Estás seguro?",
+    secondaryText: "Si descartas o te niegas a donarnos, quizás el desarrollo de Winlator@Frost se detenga muy pronto y este sitio web se cierre para siempre",
+    ok: "Está bien",
+    proceed: "Proceder a donar",
+  },
   language: { select: "Idioma" },
 };
 
@@ -421,6 +481,18 @@ const ru: Dictionary = {
   news: { title: "Новости", desc: "Последние новости, анонсы и обновления разработки Winlator@Frost.", noNewsTitle: "Новостей пока нет", noNewsDesc: "Опубликованных статей пока нет.", readArticle: "ЧИТАТЬ СТАТЬЮ", articleNotFound: "Статья не найдена", articleNotFoundDesc: "Запрошенная статья не найдена.", backToNews: "НАЗАД К НОВОСТЯМ", backToNewsArrow: "← Назад к новостям", general: "ОБЩЕЕ" },
   footer: { customizedDesc: "Настроенный опыт Winlator для Android.", project: "Проект", news: "Новости", downloads: "Загрузки", resources: "Ресурсы", updates: "Обновления", releases: "Релизы", copyright: "Copyright © Frost Apps & Games Software Co., Ltd. 2023-2026.", thaiCompany: "บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด", thaiAddress: "อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569", allRights: "Все права защищены.", builtWith: "Сделано с Frost ❄" },
   downloadButton: { downloadApk: "СКАЧАТЬ APK", downloads: "загрузок", external: "Внешний", sizeDetected: "Размер определится при загрузке", resumable: "докачка", resumableDownload: "Докачиваемый", downloading: "Загрузка...", paused: "Пауза", completed: "Готово", ready: "Готов", pause: "Пауза", resume: "Продолжить", cancel: "Отмена", downloadAgain: "Скачать снова", resumableDesc: "Докачка • Прогресс • Пауза/Продолжить", oneClickDesc: "Один клик • Загрузка на сайте • Без редиректа", proxiedDesc: "Через этот сайт • Без новой вкладки • Сохранение на устройство • Поддержка Range", resumableShort: "Докачка • Автовозобновление при сбое • Range", unknown: "Неизвестно" },
+  dangerModal: {
+    eyebrow: "⚠ КРИТИЧЕСКИ // СИСТЕМНОЕ УВЕДОМЛЕНИЕ",
+    title: "Проект Frost",
+    titleAccent: "под угрозой",
+    text: "Этот проект и сайт не смогут существовать долго, так как я уже потратил много денег на его создание, и сейчас у меня заканчивается бюджет для продолжения разработки этого проекта и сайта. Если вы хотите помочь нам сохранить развитие проекта и сайта, пожалуйста, пожертвуйте немного денег. Даже ₽500 уже очень ценны для нас",
+    hint: "Ваша поддержка сохраняет Winlator@Frost — спасибо ❄",
+    secondaryEyebrow: "⚠ ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ // ПОДТВЕРДИТЕ",
+    secondaryTitle: "Вы уверены?",
+    secondaryText: "Если вы отклоните или откажетесь от пожертвования, возможно, разработка Winlator@Frost остановится очень скоро и этот сайт будет закрыт навсегда",
+    ok: "Ничего",
+    proceed: "Перейти к пожертвованию",
+  },
   language: { select: "Язык" },
 };
 
@@ -468,6 +540,18 @@ const tr: Dictionary = {
   news: { title: "Haberler", desc: "Winlator@Frost'tan son haberler, duyurular ve geliştirme bilgileri.", noNewsTitle: "Haber yok", noNewsDesc: "Şu anda yayınlanmış haber yok.", readArticle: "MAKALEYİ OKU", articleNotFound: "Makale bulunamadı", articleNotFoundDesc: "İstenen makale bulunamadı.", backToNews: "HABERLERE DÖN", backToNewsArrow: "← Haberlere dön", general: "GENEL" },
   footer: { customizedDesc: "Android için özelleştirilmiş Winlator deneyimi.", project: "Proje", news: "Haberler", downloads: "İndirmeler", resources: "Kaynaklar", updates: "Güncellemeler", releases: "Sürümler", copyright: "Telif © Frost Apps & Games Software Co., Ltd. 2023-2026.", thaiCompany: "บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด", thaiAddress: "อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569", allRights: "Tüm hakları saklıdır.", builtWith: "Frost ile yapıldı ❄" },
   downloadButton: { downloadApk: "APK İNDİR", downloads: "indirme", external: "Harici", sizeDetected: "Boyut indirmede tespit edilecek", resumable: "sürdürülebilir", resumableDownload: "Sürdürülebilir indirme", downloading: "İndiriliyor...", paused: "Durduruldu", completed: "Tamamlandı", ready: "Hazır", pause: "Durdur", resume: "Devam", cancel: "İptal", downloadAgain: "Tekrar indir", resumableDesc: "Sürdürülebilir • İlerleme gösterilir • Durdur/Devam", oneClickDesc: "Tek tık • Sitede indirme • Yönlendirme yok", proxiedDesc: "Bu site üzerinden • Yeni sekme yok • Cihaza kaydedilir • Host izin verirse Range", resumableShort: "Sürdürülebilir • Hata sonrası otomatik devam • Range", unknown: "Bilinmiyor" },
+  dangerModal: {
+    eyebrow: "⚠ KRİTİK // SİSTEM BİLDİRİMİ",
+    title: "Frost Projesi",
+    titleAccent: "Tehlikede",
+    text: "Bu proje ve web sitesi fazla dayanamayacak çünkü inşası için zaten çok para harcadım ve şu anda bu proje ve web sitesinin geliştirilmesine devam edecek bütçem tükeniyor. Bu proje ve web sitesinin gelişimini sürdürmesine yardımcı olmak isterseniz, lütfen bize biraz bağış yapın. Sadece ₺100 bile bizim için çok değerli",
+    hint: "Desteğiniz Winlator@Frost'u ayakta tutuyor — teşekkürler ❄",
+    secondaryEyebrow: "⚠ SON UYARI // KAPATMAYI ONAYLA",
+    secondaryTitle: "Emin misiniz?",
+    secondaryText: "Eğer kapatır veya bağış yapmayı reddederseniz, belki Winlator@Frost geliştirme yolculuğu çok yakında duracak ve bu web sitesi sonsuza kadar kapanacak",
+    ok: "Sorun değil",
+    proceed: "Bağışa devam et",
+  },
   language: { select: "Dil" },
 };
 
@@ -515,6 +599,18 @@ const ko: Dictionary = {
   news: { title: "뉴스", desc: "Winlator@Frost의 최신 뉴스, 공지 및 개발 정보.", noNewsTitle: "사용 가능한 뉴스 없음", noNewsDesc: "현재 게시된 뉴스가 없습니다.", readArticle: "기사 읽기", articleNotFound: "기사를 찾을 수 없습니다", articleNotFoundDesc: "요청한 Winlator@Frost 기사를 찾을 수 없습니다.", backToNews: "뉴스로 돌아가기", backToNewsArrow: "← 뉴스로 돌아가기", general: "일반" },
   footer: { customizedDesc: "Android용 맞춤 Winlator 경험.", project: "프로젝트", news: "뉴스", downloads: "다운로드", resources: "리소스", updates: "업데이트", releases: "릴리스", copyright: "Copyright © Frost Apps & Games Software Co., Ltd. 2023-2026.", thaiCompany: "บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด", thaiAddress: "อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569", allRights: "모든 권리 보유.", builtWith: "Frost로 제작 ❄" },
   downloadButton: { downloadApk: "APK 다운로드", downloads: "다운로드", external: "외부", sizeDetected: "다운로드 시 크기 감지", resumable: "이어받기", resumableDownload: "이어받기 다운로드", downloading: "다운로드 중...", paused: "일시정지", completed: "완료", ready: "준비", pause: "일시정지", resume: "재개", cancel: "취소", downloadAgain: "다시 다운로드", resumableDesc: "이어받기 • 진행 표시 • 일시정지/재개 지원", oneClickDesc: "원클릭 • 사이트 내 다운로드 • 외부 리다이렉트 없음", proxiedDesc: "이 웹사이트 경유 • 새 탭 없음 • 기기 저장소에 저장 • 호스트 허용 시 Range 지원", resumableShort: "이어받기 • 실패 시 자동 재개 • Range 요청 지원", unknown: "알 수 없음" },
+  dangerModal: {
+    eyebrow: "⚠ 심각 // 시스템 알림",
+    title: "Frost 프로젝트",
+    titleAccent: "위험",
+    text: "이 프로젝트와 웹사이트는 구축에 이미 많은 비용을 지출했고 현재 개발을 계속할 예산이 부족하여 더 이상 오래 유지될 수 없습니다. 이 프로젝트와 웹사이트가 계속 개발될 수 있도록 도와주시려면 약간의 후원을 부탁드립니다. 단 ₩5,000만으로도 저희에게는 큰 도움이 됩니다",
+    hint: "여러분의 지원이 Winlator@Frost를 유지합니다 — 감사합니다 ❄",
+    secondaryEyebrow: "⚠ 최종 경고 // 닫기 확인",
+    secondaryTitle: "정말 닫으시겠습니까?",
+    secondaryText: "기부 요청을 무시하거나 거부하시면 Winlator@Frost 개발이 곧 중단되고 이 웹사이트도 영원히 폐쇄될 수 있습니다",
+    ok: "괜찮아요",
+    proceed: "후원하러 가기",
+  },
   language: { select: "언어" },
 };
 
@@ -562,6 +658,18 @@ const ja: Dictionary = {
   news: { title: "ニュース", desc: "Winlator@Frostの最新ニュース、お知らせ、開発情報。", noNewsTitle: "ニュースなし", noNewsDesc: "公開されたニュース記事はありません。", readArticle: "記事を読む", articleNotFound: "記事が見つかりません", articleNotFoundDesc: "要求された記事が見つかりませんでした。", backToNews: "ニュースに戻る", backToNewsArrow: "← ニュースに戻る", general: "一般" },
   footer: { customizedDesc: "Android向けカスタムWinlator体験。", project: "プロジェクト", news: "ニュース", downloads: "ダウンロード", resources: "リソース", updates: "アップデート", releases: "リリース", copyright: "Copyright © Frost Apps & Games Software Co., Ltd. 2023-2026.", thaiCompany: "บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด", thaiAddress: "อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569", allRights: "無断転載禁止。", builtWith: "Frostで構築 ❄" },
   downloadButton: { downloadApk: "APKをダウンロード", downloads: "ダウンロード", external: "外部", sizeDetected: "ダウンロード時にサイズ検出", resumable: "再開可能", resumableDownload: "再開可能なダウンロード", downloading: "ダウンロード中...", paused: "一時停止", completed: "完了", ready: "準備完了", pause: "一時停止", resume: "再開", cancel: "キャンセル", downloadAgain: "再ダウンロード", resumableDesc: "再開可能 • 進捗表示 • 一時停止/再開対応", oneClickDesc: "ワンクリック • サイト内ダウンロード • 外部リダイレクトなし", proxiedDesc: "このサイト経由 • 新しいタブなし • デバイスに保存 • ホストが許可すればRange対応", resumableShort: "再開可能 • 失敗時自動再開 • Range対応", unknown: "不明" },
+  dangerModal: {
+    eyebrow: "⚠ 重大 // システム通知",
+    title: "Frostプロジェクト",
+    titleAccent: "危機",
+    text: "このプロジェクトとウェブサイトは構築に多額の費用を費やし、現在開発を継続する予算が不足しているため、長く維持できません。もしこのプロジェクトとウェブサイトが開発を継続できるよう支援していただけるなら、ぜひご寄付をお願いします。わずか¥500でも私たちにとって大きな支えになります",
+    hint: "皆様の支援がWinlator@Frostを支えています — ありがとうございます ❄",
+    secondaryEyebrow: "⚠ 最終警告 // 閉じることを確認",
+    secondaryTitle: "本当に閉じますか？",
+    secondaryText: "寄付を拒否または無視すると、Winlator@Frostの開発が間もなく停止し、このウェブサイトも永遠に閉鎖されるかもしれません",
+    ok: "大丈夫",
+    proceed: "寄付に進む",
+  },
   language: { select: "言語" },
 };
 
@@ -609,6 +717,18 @@ const zh: Dictionary = {
   news: { title: "新闻", desc: "来自 Winlator@Frost 的最新新闻、公告和开发信息。", noNewsTitle: "暂无新闻", noNewsDesc: "目前没有已发布的新闻文章。", readArticle: "阅读文章", articleNotFound: "未找到文章", articleNotFoundDesc: "未找到请求的 Winlator@Frost 新闻文章。", backToNews: "返回新闻", backToNewsArrow: "← 返回新闻", general: "综合" },
   footer: { customizedDesc: "为 Android 定制的 Winlator 体验。", project: "项目", news: "新闻", downloads: "下载", resources: "资源", updates: "更新", releases: "版本", copyright: "Copyright © Frost Apps & Games Software Co., Ltd. 2023-2026.", thaiCompany: "บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด", thaiAddress: "อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569", allRights: "版权所有。", builtWith: "用 Frost 构建 ❄" },
   downloadButton: { downloadApk: "下载 APK", downloads: "次下载", external: "外部", sizeDetected: "下载时检测大小", resumable: "可续传", resumableDownload: "可续传下载", downloading: "下载中...", paused: "已暂停", completed: "已完成", ready: "就绪", pause: "暂停", resume: "继续", cancel: "取消", downloadAgain: "再次下载", resumableDesc: "可续传 • 显示进度 • 支持暂停/继续", oneClickDesc: "一键 • 站内下载 • 无外部跳转", proxiedDesc: "经由本站 • 无新标签 • 保存到设备存储 • 主机允许时支持 Range", resumableShort: "可续传 • 失败自动续传 • 支持 Range", unknown: "未知" },
+  dangerModal: {
+    eyebrow: "⚠ 严重 // 系统通知",
+    title: "Frost 项目",
+    titleAccent: "处于危险",
+    text: "这个项目和网站已经无法维持太久，因为我已经投入了大量资金来建设它，目前继续开发这个项目和网站的预算已经耗尽。如果您愿意帮助我们确保这个项目和网站能够继续开发，请慷慨地捐助一些资金。即使是 $5 对我们来说也非常宝贵",
+    hint: "您的支持让 Winlator@Frost 得以延续 — 感谢您 ❄",
+    secondaryEyebrow: "⚠ 最后警告 // 确认关闭",
+    secondaryTitle: "您确定吗？",
+    secondaryText: "如果您关闭或拒绝向我们捐助，也许 Winlator@Frost 的开发之旅很快就会停止，这个网站也将永远关闭",
+    ok: "没关系",
+    proceed: "前往捐助",
+  },
   language: { select: "语言" },
 };
 
@@ -656,6 +776,18 @@ const vi: Dictionary = {
   news: { title: "Tin tức", desc: "Tin tức, thông báo và cập nhật phát triển mới nhất từ Winlator@Frost.", noNewsTitle: "Không có tin tức", noNewsDesc: "Hiện chưa có bài viết nào được xuất bản.", readArticle: "ĐỌC BÀI", articleNotFound: "Không tìm thấy bài viết", articleNotFoundDesc: "Không tìm thấy bài viết yêu cầu.", backToNews: "VỀ TIN TỨC", backToNewsArrow: "← Về tin tức", general: "CHUNG" },
   footer: { customizedDesc: "Trải nghiệm Winlator tùy chỉnh cho Android.", project: "Dự án", news: "Tin tức", downloads: "Tải xuống", resources: "Tài nguyên", updates: "Cập nhật", releases: "Bản phát hành", copyright: "Copyright © Frost Apps & Games Software Co., Ltd. 2023-2026.", thaiCompany: "บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด", thaiAddress: "อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569", allRights: "Bảo lưu mọi quyền.", builtWith: "Xây dựng với Frost ❄" },
   downloadButton: { downloadApk: "TẢI APK", downloads: "lượt tải", external: "Ngoài", sizeDetected: "Kích thước sẽ xác định khi tải", resumable: "tiếp tục", resumableDownload: "Tải có thể tiếp tục", downloading: "Đang tải...", paused: "Tạm dừng", completed: "Hoàn tất", ready: "Sẵn sàng", pause: "Tạm dừng", resume: "Tiếp tục", cancel: "Hủy", downloadAgain: "Tải lại", resumableDesc: "Có thể tiếp tục • Hiện tiến trình • Tạm dừng/Tiếp tục", oneClickDesc: "Một nhấp • Tải trên trang • Không chuyển hướng", proxiedDesc: "Qua website này • Không tab mới • Lưu vào bộ nhớ thiết bị • Hỗ trợ Range nếu host cho phép", resumableShort: "Có thể tiếp tục • Tự tiếp tục khi lỗi • Hỗ trợ Range", unknown: "Không xác định" },
+  dangerModal: {
+    eyebrow: "⚠ NGHIÊM TRỌNG // THÔNG BÁO HỆ THỐNG",
+    title: "Dự án Frost",
+    titleAccent: "gặp nguy hiểm",
+    text: "Dự án và trang web này không thể duy trì lâu hơn nữa vì tôi đã chi rất nhiều tiền để xây dựng nó và hiện đang cạn ngân sách để tiếp tục phát triển dự án và trang web này. Vì vậy, nếu bạn sẵn lòng giúp chúng tôi đảm bảo dự án và trang web này tiếp tục phát triển, xin hãy quyên góp một ít tiền. Chỉ 100.000₫ cũng đã rất quý giá với chúng tôi",
+    hint: "Sự ủng hộ của bạn giúp Winlator@Frost tồn tại — cảm ơn ❄",
+    secondaryEyebrow: "⚠ CẢNH BÁO CUỐI // XÁC NHẬN ĐÓNG",
+    secondaryTitle: "Bạn có chắc không?",
+    secondaryText: "Nếu bạn bỏ qua hoặc từ chối quyên góp cho chúng tôi, có lẽ hành trình phát triển Winlator@Frost sẽ sớm dừng lại và trang web này cũng sẽ bị đóng vĩnh viễn",
+    ok: "Không sao",
+    proceed: "Tiếp tục quyên góp",
+  },
   language: { select: "Ngôn ngữ" },
 };
 
@@ -703,6 +835,18 @@ const th: Dictionary = {
   news: { title: "ข่าวสาร", desc: "ข่าวสาร ประกาศ และข้อมูลการพัฒนาล่าสุดจาก Winlator@Frost", noNewsTitle: "ไม่มีข่าว", noNewsDesc: "ขณะนี้ไม่มีบทความข่าวที่เผยแพร่", readArticle: "อ่านบทความ", articleNotFound: "ไม่พบบทความ", articleNotFoundDesc: "ไม่พบบทความข่าว Winlator@Frost ที่ร้องขอ", backToNews: "กลับไปหน้าข่าว", backToNewsArrow: "← กลับไปหน้าข่าว", general: "ทั่วไป" },
   footer: { customizedDesc: "ประสบการณ์ Winlator ที่ปรับแต่งสำหรับ Android", project: "โปรเจกต์", news: "ข่าวสาร", downloads: "ดาวน์โหลด", resources: "ทรัพยากร", updates: "อัปเดต", releases: "รุ่น", copyright: "ลิขสิทธิ์ © Frost Apps & Games Software Co., Ltd. 2023-2026", thaiCompany: "บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด", thaiAddress: "อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569", allRights: "สงวนลิขสิทธิ์", builtWith: "สร้างด้วย Frost ❄" },
   downloadButton: { downloadApk: "ดาวน์โหลด APK", downloads: "ดาวน์โหลด", external: "ภายนอก", sizeDetected: "ตรวจขนาดตอนดาวน์โหลด", resumable: "ดาวน์โหลดต่อได้", resumableDownload: "ดาวน์โหลดต่อได้", downloading: "กำลังดาวน์โหลด...", paused: "หยุดชั่วคราว", completed: "เสร็จสิ้น", ready: "พร้อม", pause: "หยุด", resume: "ต่อ", cancel: "ยกเลิก", downloadAgain: "ดาวน์โหลดอีกครั้ง", resumableDesc: "ดาวน์โหลดต่อได้ • แสดงความคืบหน้า • หยุด/ต่อได้", oneClickDesc: "คลิกเดียว • ดาวน์โหลดในเว็บ • ไม่เปลี่ยนแท็บ", proxiedDesc: "ผ่านเว็บไซต์นี้ • ไม่เปิดแท็บใหม่ • บันทึกลงเครื่อง • รองรับ Range ถ้าโฮสต์อนุญาต", resumableShort: "ดาวน์โหลดต่อได้ • ต่ออัตโนมัติเมื่อล้มเหลว • รองรับ Range", unknown: "ไม่ทราบ" },
+  dangerModal: {
+    eyebrow: "⚠ วิกฤต // แจ้งเตือนระบบ",
+    title: "โครงการ Frost",
+    titleAccent: "ตกอยู่ในอันตราย",
+    text: "โครงการและเว็บไซต์นี้ไม่สามารถอยู่ได้นานอีกต่อไป เพราะฉันได้ใช้เงินจำนวนมากในการสร้างมัน และตอนนี้ฉันกำลังขาดงบประมาณที่จะดำเนินการพัฒนาโครงการและเว็บไซต์นี้ต่อไป ดังนั้นหากคุณยินดีที่จะช่วยให้โครงการและเว็บไซต์นี้ยังคงอยู่ในเส้นทางการพัฒนา โปรดบริจาคเงินให้เราบ้าง แม้เพียง 100 บาท ก็มีค่ามากสำหรับเราแล้ว",
+    hint: "การสนับสนุนของคุณทำให้ Winlator@Frost ยังคงอยู่ — ขอบคุณ ❄",
+    secondaryEyebrow: "⚠ คำเตือนสุดท้าย // ยืนยันการปิด",
+    secondaryTitle: "คุณแน่ใจหรือไม่?",
+    secondaryText: "หากคุณปิดหรือปฏิเสธที่จะบริจาคให้เรา บางทีการพัฒนา Winlator@Frost อาจจะหยุดลงในเร็วๆ นี้พร้อมกับเว็บไซต์นี้จะถูกปิดตลอดไป",
+    ok: "ไม่เป็นไร",
+    proceed: "ดำเนินการบริจาค",
+  },
   language: { select: "ภาษา" },
 };
 
@@ -750,6 +894,18 @@ const id: Dictionary = {
   news: { title: "Berita", desc: "Berita terbaru, pengumuman dan informasi pengembangan dari Winlator@Frost.", noNewsTitle: "Tidak ada berita tersedia", noNewsDesc: "Saat ini tidak ada artikel berita yang dipublikasikan.", readArticle: "BACA ARTIKEL", articleNotFound: "Artikel tidak ditemukan", articleNotFoundDesc: "Artikel yang diminta tidak dapat ditemukan.", backToNews: "KEMBALI KE BERITA", backToNewsArrow: "← Kembali ke berita", general: "UMUM" },
   footer: { customizedDesc: "Pengalaman Winlator yang disesuaikan untuk Android.", project: "Proyek", news: "Berita", downloads: "Unduhan", resources: "Sumber", updates: "Pembaruan", releases: "Rilis", copyright: "Hak Cipta © Frost Apps & Games Software Co., Ltd. 2023-2026.", thaiCompany: "บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด", thaiAddress: "อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569", allRights: "Hak cipta dilindungi.", builtWith: "Dibuat dengan Frost ❄" },
   downloadButton: { downloadApk: "UNDUH APK", downloads: "unduhan", external: "Eksternal", sizeDetected: "Ukuran terdeteksi saat unduh", resumable: "dapat dilanjutkan", resumableDownload: "Unduhan dapat dilanjutkan", downloading: "Mengunduh...", paused: "Dijeda", completed: "Selesai", ready: "Siap", pause: "Jeda", resume: "Lanjutkan", cancel: "Batal", downloadAgain: "Unduh lagi", resumableDesc: "Dapat dilanjutkan • Kemajuan ditampilkan • Jeda/Lanjutkan", oneClickDesc: "Satu klik • Unduh di situs • Tanpa redirect", proxiedDesc: "Melalui situs ini • Tanpa tab baru • Disimpan ke penyimpanan perangkat • Dukung Range jika host mengizinkan", resumableShort: "Dapat dilanjutkan • Lanjut otomatis jika gagal • Dukung Range", unknown: "Tidak diketahui" },
+  dangerModal: {
+    eyebrow: "⚠ KRITIS // NOTIFIKASI SISTEM",
+    title: "Proyek Frost",
+    titleAccent: "Terancam",
+    text: "Proyek dan situs web ini tidak bisa bertahan lebih lama lagi karena saya telah menghabiskan banyak uang untuk membangunnya, dan saat ini saya kehabisan anggaran untuk melanjutkan pengembangan proyek dan situs web ini. Jadi, jika Anda bersedia membantu kami memastikan proyek dan situs web ini tetap berada di jalur perkembangannya, mohon donasikan sedikit uang kepada kami. Bahkan Rp50.000 sudah sangat berharga bagi kami",
+    hint: "Dukungan Anda menjaga Winlator@Frost tetap hidup — terima kasih ❄",
+    secondaryEyebrow: "⚠ PERINGATAN TERAKHIR // KONFIRMASI TUTUP",
+    secondaryTitle: "Apakah Anda yakin?",
+    secondaryText: "Jika Anda menutup atau menolak untuk berdonasi kepada kami, mungkin perjalanan pengembangan Winlator@Frost akan segera berhenti bersamaan dengan situs web ini akan ditutup selamanya juga",
+    ok: "Tidak apa-apa",
+    proceed: "Lanjut donasi",
+  },
   language: { select: "Bahasa" },
 };
 
@@ -797,6 +953,18 @@ const pt: Dictionary = {
   news: { title: "Notícias", desc: "Últimas notícias, anúncios e informações de desenvolvimento do Winlator@Frost.", noNewsTitle: "Nenhuma notícia disponível", noNewsDesc: "Nenhum artigo publicado no momento.", readArticle: "LER ARTIGO", articleNotFound: "Artigo não encontrado", articleNotFoundDesc: "O artigo solicitado não pôde ser encontrado.", backToNews: "VOLTAR PARA NOTÍCIAS", backToNewsArrow: "← Voltar para notícias", general: "GERAL" },
   footer: { customizedDesc: "Experiência Winlator personalizada para Android.", project: "Projeto", news: "Notícias", downloads: "Downloads", resources: "Recursos", updates: "Atualizações", releases: "Versões", copyright: "Copyright © Frost Apps & Games Software Co., Ltd. 2023-2026.", thaiCompany: "บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด", thaiAddress: "อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569", allRights: "Todos os direitos reservados.", builtWith: "Construído com Frost ❄" },
   downloadButton: { downloadApk: "BAIXAR APK", downloads: "downloads", external: "Externo", sizeDetected: "Tamanho detectado no download", resumable: "retomável", resumableDownload: "Download retomável", downloading: "Baixando...", paused: "Pausado", completed: "Concluído", ready: "Pronto", pause: "Pausar", resume: "Retomar", cancel: "Cancelar", downloadAgain: "Baixar novamente", resumableDesc: "Retomável • Progresso mostrado • Pausar/Retomar", oneClickDesc: "Um clique • Download no site • Sem redirecionamento", proxiedDesc: "Via este site • Sem nova aba • Salvo no armazenamento • Suporta Range se host permitir", resumableShort: "Retomável • Retomada auto se falhar • Range", unknown: "Desconhecido" },
+  dangerModal: {
+    eyebrow: "⚠ CRÍTICO // AVISO DO SISTEMA",
+    title: "Projeto Frost",
+    titleAccent: "em risco",
+    text: "Este projeto e site não poderão continuar por muito mais tempo, pois já gastei muito dinheiro para construí-lo e atualmente estou ficando sem orçamento para continuar o desenvolvimento. Se você quiser nos ajudar a manter este projeto e site no caminho do desenvolvimento, por favor doe-nos algum dinheiro. Até R$25 já são muito valiosos para nós",
+    hint: "Seu apoio mantém o Winlator@Frost vivo — obrigado ❄",
+    secondaryEyebrow: "⚠ ÚLTIMO AVISO // CONFIRMAR FECHAR",
+    secondaryTitle: "Tem certeza?",
+    secondaryText: "Se você dispensar ou se recusar a nos doar, talvez a jornada de desenvolvimento do Winlator@Frost seja interrompida muito em breve e este site será fechado para sempre",
+    ok: "Tudo bem",
+    proceed: "Prosseguir para doar",
+  },
   language: { select: "Idioma" },
 };
 
@@ -844,6 +1012,18 @@ const ar: Dictionary = {
   news: { title: "الأخبار", desc: "آخر الأخبار والإعلانات ومعلومات التطوير من Winlator@Frost.", noNewsTitle: "لا توجد أخبار متاحة", noNewsDesc: "لا توجد مقالات منشورة حالياً.", readArticle: "اقرأ المقال", articleNotFound: "المقال غير موجود", articleNotFoundDesc: "لم يتم العثور على مقال Winlator@Frost المطلوب.", backToNews: "العودة للأخبار", backToNewsArrow: "← العودة للأخبار", general: "عام" },
   footer: { customizedDesc: "تجربة Winlator مخصصة لنظام Android.", project: "المشروع", news: "الأخبار", downloads: "التحميلات", resources: "الموارد", updates: "التحديثات", releases: "الإصدارات", copyright: "Copyright © Frost Apps & Games Software Co., Ltd. 2023-2026.", thaiCompany: "บริษัท ฟรอสต์ แอปและเกม ซอฟต์แวร์ จำกัด", thaiAddress: "อำเภอหาดใหญ่ จังหวัดสงขลา ประเทศไทย 90110 2566-2569", allRights: "جميع الحقوق محفوظة.", builtWith: "صُنع بـ Frost ❄" },
   downloadButton: { downloadApk: "حمّل APK", downloads: "تحميل", external: "خارجي", sizeDetected: "سيتم تحديد الحجم عند التحميل", resumable: "قابل للاستئناف", resumableDownload: "تحميل قابل للاستئناف", downloading: "جاري التحميل...", paused: "متوقف", completed: "مكتمل", ready: "جاهز", pause: "إيقاف", resume: "استئناف", cancel: "إلغاء", downloadAgain: "حمّل مرة أخرى", resumableDesc: "قابل للاستئناف • عرض التقدم • إيقاف/استئناف", oneClickDesc: "نقرة واحدة • تحميل داخل الموقع • بدون إعادة توجيه", proxiedDesc: "عبر هذا الموقع • بدون تبويب جديد • حفظ على الجهاز • يدعم Range إذا سمح المضيف", resumableShort: "قابل للاستئناف • استئناف تلقائي عند الفشل • يدعم Range", unknown: "غير معروف" },
+  dangerModal: {
+    eyebrow: "⚠ حرج // تنبيه النظام",
+    title: "مشروع Frost",
+    titleAccent: "في خطر",
+    text: "هذا المشروع والموقع لم يعد بإمكانه الاستمرار طويلاً حيث أنفقت الكثير من المال في بنائه، وحالياً نفدت ميزانيتي لمواصلة تطوير هذا المشروع والموقع. لذا إذا كنت ترغب في مساعدتنا لضمان استمرار هذا المشروع والموقع في مسار التطوير، يرجى التكرم بالتبرع لنا ببعض المال. حتى $5 ذات قيمة كبيرة بالنسبة لنا",
+    hint: "دعمكم يبقي Winlator@Frost على قيد الحياة — شكراً ❄",
+    secondaryEyebrow: "⚠ تحذير أخير // تأكيد الإغلاق",
+    secondaryTitle: "هل أنت متأكد؟",
+    secondaryText: "إذا تجاهلت أو رفضت التبرع لنا، فقد تتوقف رحلة تطوير Winlator@Frost قريباً جداً وسيتم إغلاق هذا الموقع أيضاً إلى الأبد",
+    ok: "لا بأس",
+    proceed: "المتابعة للتبرع",
+  },
   language: { select: "اللغة" },
 };
 
