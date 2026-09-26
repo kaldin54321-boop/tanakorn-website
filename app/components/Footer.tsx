@@ -59,6 +59,7 @@ export default function Footer({ locale = "en", dict }: Props) {
             <h4>{d.footer.project}</h4>
             <Link href={`/${loc}/news`}>{d.footer.news}</Link>
             <Link href={`/${loc}/downloads`}>{d.footer.downloads}</Link>
+            <Link href={`/${loc}/support`}>❄ {d.nav.support}</Link>
           </div>
 
           <div>

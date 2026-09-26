@@ -21,6 +21,7 @@ export default function Navbar({ locale = "en", dict }: Props) {
   const homeHref = `/${loc}`;
   const newsHref = `/${loc}/news`;
   const downloadsHref = `/${loc}/downloads`;
+  const supportHref = `/${loc}/support`;
   function switchLocaleMobile(newLocale: string) {
     const segments = pathname.split("/");
     if (locales.includes(segments[1] as Locale)) segments[1] = newLocale;
@@ -43,6 +44,7 @@ export default function Navbar({ locale = "en", dict }: Props) {
           <Link href={homeHref} onClick={() => setOpen(false)}>{d.nav.home}</Link>
           <Link href={newsHref} onClick={() => setOpen(false)}>{d.nav.news}</Link>
           <Link href={downloadsHref} onClick={() => setOpen(false)}>{d.nav.downloads}</Link>
+          <Link href={supportHref} onClick={() => setOpen(false)}>❄ {d.nav.support}</Link>
         </nav>
 
         <div className="nav-right">
@@ -68,6 +70,7 @@ export default function Navbar({ locale = "en", dict }: Props) {
           <Link href={homeHref} onClick={() => setOpen(false)}>{d.nav.home}</Link>
           <Link href={newsHref} onClick={() => setOpen(false)}>{d.nav.news}</Link>
           <Link href={downloadsHref} onClick={() => setOpen(false)}>{d.nav.downloads}</Link>
+          <Link href={supportHref} onClick={() => setOpen(false)}>❄ {d.nav.support}</Link>
           <Link href={downloadsHref} onClick={() => setOpen(false)} className="button-primary" style={{ marginTop: "8px", textAlign: "center" }}>{d.nav.download}</Link>
           <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>

@@ -59,6 +59,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
                 <a href="https://buymeacoffee.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button bmc">Buy Me a Coffee</a>
                 <a href="https://paypal.me/MUHAMMADINISMAIL" target="_blank" rel="noopener noreferrer" className="support-button paypal">PayPal</a>
               </div>
+              <Link href={`/${loc}/support`} className="text-link" style={{ display: "inline-block", marginTop: "14px" }}>{dict.common.supportProject}</Link>
             </div>
           </div>
         </div>
