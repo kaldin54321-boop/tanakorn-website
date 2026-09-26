@@ -35,6 +35,7 @@ export default async function SupportPage({ params }: { params: Promise<{ locale
     { icon: "🔨", title: s.why2T, desc: s.why2D },
     { icon: "🤖", title: s.why3T, desc: s.why3D },
     { icon: "🧪", title: s.why4T, desc: s.why4D },
+    { icon: "🤝", title: s.why5T, desc: s.why5D },
   ];
 
   const whereItems = [
@@ -43,6 +44,7 @@ export default async function SupportPage({ params }: { params: Promise<{ locale
     { icon: "🤖", title: s.where3T, desc: s.where3D },
     { icon: "🧪", title: s.where4T, desc: s.where4D },
     { icon: "🔧", title: s.where5T, desc: s.where5D },
+    { icon: "🤝", title: s.where6T, desc: s.where6D },
   ];
 
   const costRows = [
@@ -59,6 +61,11 @@ export default async function SupportPage({ params }: { params: Promise<{ locale
   ];
 
   const methodDescs = [s.mKofiD, s.mBmcD, s.mPpD];
+
+  const supporters = [
+    { name: "NewTheLife", amount: s.wallAmt1, tier: TIERS[2] },
+    { name: "Shigarui", amount: s.wallAmt2, tier: TIERS[2] },
+  ];
 
   const otherWays = [
     { icon: "⭐", title: s.o1T, desc: s.o1D, href: undefined, share: false },
@@ -248,7 +255,18 @@ export default async function SupportPage({ params }: { params: Promise<{ locale
         </div>
         <p className="support-lead">{s.wallDesc}</p>
         <div className="support-card support-wall">
-          <p className="support-wall-empty">❄ {s.wallEmpty}</p>
+          <div className="support-wall-list">
+            {supporters.map((person) => (
+              <div key={person.name} className="support-wall-entry">
+                <span className="support-wall-avatar" aria-hidden>❄</span>
+                <span className="support-wall-info">
+                  <strong>@{person.name}</strong>
+                  <span className="support-tier">{person.tier}</span>
+                </span>
+                <span className="support-wall-amount">{person.amount}</span>
+              </div>
+            ))}
+          </div>
           <div className="support-tiers">
             {TIERS.map((tier) => (
               <span key={tier} className="support-tier">{tier}</span>
