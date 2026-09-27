@@ -62,9 +62,10 @@ export async function getAnalyticsStats() {
   } catch {}
 
   // Try exact count for totalViews (no row fetch, supports 1M)
+  // Exclude APK-download marker rows (counted separately as downloads).
   let totalViewsExact: number | null = null;
   try {
-    const { count, error: countErr } = await supabase.from("page_views").select("id", { count: "exact", head: true });
+    const { count, error: countErr } = await supabase.from("page_views").select("id", { count: "exact", head: true }).not("path", "like", "/__download/%");
     if (!countErr && typeof count === "number") totalViewsExact = count;
   } catch {}
 
@@ -79,6 +80,7 @@ export async function getAnalyticsStats() {
     const { data: views, error } = await supabase
       .from("page_views")
       .select("id, path, user_agent, country, browser, os, created_at")
+      .not("path", "like", "/__download/%")
       .order("created_at", { ascending: false })
       .range(from, from + pageSize - 1);
     if (error) {

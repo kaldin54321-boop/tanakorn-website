@@ -15,24 +15,31 @@ type RouteContext = {
 
 const noStoreHeaders = { "Cache-Control": "no-store, no-cache, must-revalidate", Pragma: "no-cache" };
 
+// Marker path recorded in page_views for each APK download click.
+// Uses the analytics table (public insert/select) because it is the only
+// store writable without extra DB setup; the admin dashboard filters these
+// marker rows out so view statistics stay clean.
+function downloadMarker(version: string) {
+  return `/__download/${version}`;
+}
+
 // Single canonical read used by both GET and POST, so a value returned by
 // POST can never disagree with a later GET (the old cause of the visible
 // "+1 then revert" bug).
 async function getCanonicalCount(client: any, version: string): Promise<number | null> {
-  // Preferred: atomic RPC that sums releases + download_events (for public fallback)
-  try {
-    const { data: rpcCount, error: rpcErr } = await client.rpc("get_public_download_count", { p_version: version });
-    if (!rpcErr && typeof rpcCount === "number") return rpcCount;
-  } catch {}
   const { data, error } = await client.from("releases").select("download_count").eq("version", version).maybeSingle();
   if (error || !data) return null;
-  // Add fallback download_events count if the table exists (missing table -> 0)
+  const base = (data as any).download_count ?? 0;
+  // Download clicks recorded as marker rows (durable across sessions).
   let extra = 0;
   try {
-    const { count } = await client.from("download_events").select("id", { count: "exact", head: true }).eq("version", version);
+    const { count } = await client
+      .from("page_views")
+      .select("id", { count: "exact", head: true })
+      .eq("path", downloadMarker(version));
     extra = count ?? 0;
   } catch {}
-  return ((data as any).download_count ?? 0) + extra;
+  return base + extra;
 }
 
 export async function GET(request: Request, context: RouteContext) {
@@ -114,10 +121,11 @@ export async function POST(request: Request, context: RouteContext) {
     }
   } catch {}
 
-  // 3) Fallback for public users when releases writes are blocked:
-  // insert into download_events (public) — only if the table exists.
+  // 3) Durable public fallback: record the click as a marker row in
+  // page_views (public insert). Counted by getCanonicalCount, so it
+  // survives refreshes, new sessions, and other devices.
   try {
-    const { error: insertErr } = await supabaseAnon.from("download_events").insert({ version });
+    const { error: insertErr } = await supabaseAnon.from("page_views").insert({ path: downloadMarker(version) });
     if (!insertErr) {
       const verified = await verify();
       if (verified !== null) return NextResponse.json({ success: true, download_count: verified }, { headers: { "Cache-Control": "no-store" } });
@@ -126,14 +134,11 @@ export async function POST(request: Request, context: RouteContext) {
 
   // Nothing persisted: be honest instead of returning a fabricated +1
   // (a fake number is exactly what the UI later "reverted").
-  // Durable fix: run supabase-download-count.sql in the Supabase SQL Editor
-  // (creates the atomic RPC + public policies), then increments persist.
   return NextResponse.json(
     {
       success: false,
-      needsSetup: true,
       download_count: baseline,
-      message: "Download counter is not configured in the database. Run supabase-download-count.sql in the Supabase SQL Editor to enable persistent counts.",
+      message: "Download could not be recorded in the database.",
     },
     { status: 500, headers: { "Cache-Control": "no-store" } }
   );
