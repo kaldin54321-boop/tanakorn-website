@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseJs } from "@supabase/supabase-js";
+import { downloadMarkerPath } from "@/lib/releases";
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -19,9 +20,7 @@ const noStoreHeaders = { "Cache-Control": "no-store, no-cache, must-revalidate",
 // Uses the analytics table (public insert/select) because it is the only
 // store writable without extra DB setup; the admin dashboard filters these
 // marker rows out so view statistics stay clean.
-function downloadMarker(version: string) {
-  return `/__download/${version}`;
-}
+const downloadMarker = downloadMarkerPath;
 
 // Single canonical read used by both GET and POST, so a value returned by
 // POST can never disagree with a later GET (the old cause of the visible

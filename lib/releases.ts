@@ -1,5 +1,41 @@
 import { createClient } from "@/lib/supabase/server";
 
+// Marker path recorded in page_views for each APK download click.
+// Canonical download total = releases.download_count + marker rows, so the
+// same true number is served on first paint everywhere (lists, homepage,
+// detail pages, API) and can never appear to "revert" after a restart.
+export function downloadMarkerPath(version: string) {
+  return `/__download/${version}`;
+}
+
+async function withDownloadTotals<T extends { version: string; download_count?: number | null }>(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  releases: T[]
+): Promise<T[]> {
+  if (!releases.length) return releases;
+  try {
+    const extras = await Promise.all(
+      releases.map(async (r) => {
+        try {
+          const { count } = await supabase
+            .from("page_views")
+            .select("id", { count: "exact", head: true })
+            .eq("path", downloadMarkerPath(r.version));
+          return count ?? 0;
+        } catch {
+          return 0;
+        }
+      })
+    );
+    return releases.map((r, i) => ({
+      ...r,
+      download_count: (r.download_count ?? 0) + extras[i],
+    }));
+  } catch {
+    return releases;
+  }
+}
+
 export async function getPublicReleases() {
   const supabase = await createClient();
 
@@ -44,7 +80,7 @@ export async function getPublicReleases() {
     return [];
   }
 
-  return data ?? [];
+  return withDownloadTotals(supabase, data ?? []);
 }
 
 export async function getLatestPublicRelease() {
@@ -93,5 +129,7 @@ export async function getLatestPublicRelease() {
     return null;
   }
 
-  return data;
+  if (!data) return null;
+  const [withTotal] = await withDownloadTotals(supabase, [data]);
+  return withTotal;
 }
