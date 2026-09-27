@@ -54,12 +54,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             <p className="donation-card-title">{dict.hero.supportFrost}</p>
             <div className="donation-card">
               <p className="donation-card-text">{dict.common.donationText}</p>
-              <div className="support-buttons">
-                <a href="https://ko-fi.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button kofi">Ko-fi</a>
-                <a href="https://buymeacoffee.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button bmc">Buy Me a Coffee</a>
-                <a href="https://paypal.me/MUHAMMADINISMAIL" target="_blank" rel="noopener noreferrer" className="support-button paypal">PayPal</a>
-              </div>
-              <Link href={`/${loc}/support`} className="text-link" style={{ display: "inline-block", marginTop: "14px" }}>{dict.common.supportProject}</Link>
+              <Link href={`/${loc}/support`} className="button-secondary">{dict.common.learnMoreDonation}</Link>
             </div>
           </div>
         </div>

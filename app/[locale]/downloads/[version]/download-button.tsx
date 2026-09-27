@@ -67,12 +67,16 @@ export default function DownloadButton({
         const r = await fetch(`/api/downloads/${encodeURIComponent(version)}/increment`, { cache: "no-store" });
         if (!r.ok) return;
         const d = await r.json();
-        if (!cancelled && d.success && typeof d.download_count === "number") setDownloadCount(d.download_count);
+        // Never move the visible count backwards: a stale/slower poll must
+        // not overwrite a newer optimistic or confirmed value.
+        if (!cancelled && d.success && typeof d.download_count === "number") {
+          setDownloadCount((prev) => Math.max(prev, d.download_count));
+        }
       } catch {}
     }
     fetchInfo();
     fetchPublicCount();
-    const id = setInterval(fetchPublicCount, 3000);
+    const id = setInterval(fetchPublicCount, 30000);
     const onVisible = () => { if (document.visibilityState === "visible") fetchPublicCount(); };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
@@ -82,12 +86,15 @@ export default function DownloadButton({
     };
   }, [version, initialFileName, fileSize]);
 
-  // Keep downloadCount in sync with initialDownloadCount prop (live from server)
-  useEffect(() => {
+  // Adopt a newer server-provided count during render (never move it
+  // backwards — the prop may be stale relative to local clicks).
+  const [syncedInitial, setSyncedInitial] = useState(initialDownloadCount);
+  if (syncedInitial !== initialDownloadCount) {
+    setSyncedInitial(initialDownloadCount);
     if (initialDownloadCount !== null && initialDownloadCount !== undefined) {
-      setDownloadCount(initialDownloadCount);
+      setDownloadCount((prev) => Math.max(prev, initialDownloadCount));
     }
-  }, [initialDownloadCount]);
+  }
 
   async function startDownload(
     resumeFrom = 0,
@@ -227,12 +234,14 @@ export default function DownloadButton({
     setError("");
     chunksRef.current = [];
     receivedRef.current = 0;
-    // Increment live download count
+    // Optimistic +1 right away, then reconcile with the confirmed server
+    // value (clamped so the visible count never moves backwards).
+    setDownloadCount((prev) => prev + 1);
     fetch(`/api/downloads/${encodeURIComponent(version)}/increment`, { method: "POST" })
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && data.download_count !== undefined) {
-          setDownloadCount(data.download_count);
+        if (data.success && typeof data.download_count === "number") {
+          setDownloadCount((prev) => Math.max(prev, data.download_count));
         }
       })
       .catch(() => {});

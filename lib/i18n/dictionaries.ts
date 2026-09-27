@@ -16,6 +16,7 @@ const en = {
     released: "Released",
     donationText: "Winlator@Frost is free for everyone. If you would like to help cover hosting and development costs, you can make a voluntary contribution.",
     supportProject: "Support the project →",
+    learnMoreDonation: "Learn more about Frost donation",
   },
   nav: {
     home: "Home",
@@ -318,7 +319,8 @@ const en = {
 const de: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "Laden...", error: "Fehler", downloads: "Downloads", apk: "APK", external: "Extern", unknownSize: "Unbekannte Größe", released: "Veröffentlicht" ,
     donationText: "Winlator@Frost ist für alle kostenlos. Wenn du helfen möchtest, die Hosting- und Entwicklungskosten zu decken, kannst du freiwillig einen Beitrag leisten.",
-    supportProject: "Projekt unterstützen →"
+    supportProject: "Projekt unterstützen →",
+    learnMoreDonation: "Mehr über Frost-Spenden erfahren",
   },
   nav: { home: "Startseite", news: "Neuigkeiten", downloads: "Downloads", download: "Herunterladen", support: "Support", toggleMenu: "Menü umschalten" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "WINDOWS-ERLEBNIS · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Ein fortschrittliches angepasstes Winlator-Erlebnis für Leistung, Flexibilität und erweiterte Windows-Unterstützung auf Android.", downloadLatest: "Neueste herunterladen", supportFrost: "Frost unterstützen" },
@@ -491,7 +493,8 @@ const de: Dictionary = {
 const fr: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "Chargement...", error: "Erreur", downloads: "téléchargements", apk: "APK", external: "Externe", unknownSize: "Taille inconnue", released: "Publié" ,
     donationText: "Winlator@Frost est gratuit pour tout le monde. Si vous souhaitez aider à couvrir les coûts d'hébergement et de développement, vous pouvez faire une contribution volontaire.",
-    supportProject: "Soutenir le projet →"
+    supportProject: "Soutenir le projet →",
+    learnMoreDonation: "En savoir plus sur les dons Frost",
   },
   nav: { home: "Accueil", news: "Actualités", downloads: "Téléchargements", download: "Télécharger", support: "Soutenir", toggleMenu: "Basculer le menu" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "EXPÉRIENCE WINDOWS · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Une expérience Winlator avancée et personnalisée conçue pour la performance, la flexibilité et le support avancé des applications Windows sur Android.", downloadLatest: "Télécharger la dernière", supportFrost: "Soutenir Frost" },
@@ -664,7 +667,8 @@ const fr: Dictionary = {
 const it: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "Caricamento...", error: "Errore", downloads: "download", apk: "APK", external: "Esterno", unknownSize: "Dimensione sconosciuta", released: "Rilasciato" ,
     donationText: "Winlator@Frost è gratuito per tutti. Se vuoi aiutare a coprire i costi di hosting e sviluppo, puoi fare un contributo volontario.",
-    supportProject: "Sostieni il progetto →"
+    supportProject: "Sostieni il progetto →",
+    learnMoreDonation: "Scopri di più sulle donazioni Frost",
   },
   nav: { home: "Home", news: "Notizie", downloads: "Download", download: "Scarica", support: "Supporta", toggleMenu: "Attiva menu" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "ESPERIENZA WINDOWS · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Un'esperienza Winlator avanzata e personalizzata creata per prestazioni, flessibilità e supporto avanzato alle app Windows su Android.", downloadLatest: "Scarica l'ultima", supportFrost: "Supporta Frost" },
@@ -837,7 +841,8 @@ const it: Dictionary = {
 const es: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "Cargando...", error: "Error", downloads: "descargas", apk: "APK", external: "Externo", unknownSize: "Tamaño desconocido", released: "Publicado" ,
     donationText: "Winlator@Frost es gratis para todos. Si quieres ayudar a cubrir los costos de alojamiento y desarrollo, puedes hacer una contribución voluntaria.",
-    supportProject: "Apoyar el proyecto →"
+    supportProject: "Apoyar el proyecto →",
+    learnMoreDonation: "Más información sobre donar a Frost",
   },
   nav: { home: "Inicio", news: "Noticias", downloads: "Descargas", download: "Descargar", support: "Apoyar", toggleMenu: "Alternar menú" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "EXPERIENCIA WINDOWS · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Una experiencia Winlator avanzada y personalizada creada para rendimiento, flexibilidad y soporte avanzado de apps Windows en Android.", downloadLatest: "Descargar lo último", supportFrost: "Apoyar Frost" },
@@ -1010,7 +1015,8 @@ const es: Dictionary = {
 const ru: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "Загрузка...", error: "Ошибка", downloads: "загрузок", apk: "APK", external: "Внешний", unknownSize: "Неизвестный размер", released: "Выпущено" ,
     donationText: "Winlator@Frost бесплатен для всех. Если хотите помочь покрыть расходы на хостинг и разработку, вы можете сделать добровольное пожертвование.",
-    supportProject: "Поддержать проект →"
+    supportProject: "Поддержать проект →",
+    learnMoreDonation: "Подробнее о поддержке Frost",
   },
   nav: { home: "Главная", news: "Новости", downloads: "Загрузки", download: "Скачать", support: "Поддержка", toggleMenu: "Меню" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "ОПЫТ WINDOWS · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Продвинутый настроенный опыт Winlator, созданный для производительности, гибкости и расширенной поддержки Windows-приложений на Android.", downloadLatest: "Скачать последнюю", supportFrost: "Поддержать Frost" },
@@ -1183,7 +1189,8 @@ const ru: Dictionary = {
 const tr: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "Yükleniyor...", error: "Hata", downloads: "indirme", apk: "APK", external: "Harici", unknownSize: "Bilinmeyen boyut", released: "Yayınlandı" ,
     donationText: "Winlator@Frost herkes için ücretsizdir. Barındırma ve geliştirme giderlerine destek olmak isterseniz, gönüllü katkıda bulunabilirsiniz.",
-    supportProject: "Projeyi destekle →"
+    supportProject: "Projeyi destekle →",
+    learnMoreDonation: "Frost bağışları hakkında daha fazla bilgi",
   },
   nav: { home: "Ana Sayfa", news: "Haberler", downloads: "İndirmeler", download: "İndir", support: "Destek", toggleMenu: "Menüyü değiştir" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "WINDOWS DENEYİMİ · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Android'de performans, esneklik ve gelişmiş Windows uygulama desteği için oluşturulmuş gelişmiş özelleştirilmiş Winlator deneyimi.", downloadLatest: "En sonu indir", supportFrost: "Frost'u destekle" },
@@ -1356,7 +1363,8 @@ const tr: Dictionary = {
 const ko: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "로딩 중...", error: "오류", downloads: "다운로드", apk: "APK", external: "외부", unknownSize: "알 수 없는 크기", released: "출시" ,
     donationText: "Winlator@Frost는 모두에게 무료입니다. 호스팅 및 개발 비용에 도움을 주고 싶으시다면 자발적으로 후원하실 수 있습니다.",
-    supportProject: "프로젝트 후원하기 →"
+    supportProject: "프로젝트 후원하기 →",
+    learnMoreDonation: "Frost 후원에 대해 더 알아보기",
   },
   nav: { home: "홈", news: "뉴스", downloads: "다운로드", download: "다운로드", support: "후원", toggleMenu: "메뉴 전환" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "WINDOWS 경험 · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Android에서 성능, 유연성 및 고급 Windows 앱 지원을 위해 구축된 고급 맞춤형 Winlator 경험.", downloadLatest: "최신 다운로드", supportFrost: "Frost 후원" },
@@ -1529,7 +1537,8 @@ const ko: Dictionary = {
 const ja: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "読み込み中...", error: "エラー", downloads: "ダウンロード", apk: "APK", external: "外部", unknownSize: "不明なサイズ", released: "リリース" ,
     donationText: "Winlator@Frostはすべての方に無料です。ホスティングや開発コストの支援にご協力いただける方は、任意でご寄付いただけます。",
-    supportProject: "プロジェクトを支援する →"
+    supportProject: "プロジェクトを支援する →",
+    learnMoreDonation: "Frostへの寄付について詳しく見る",
   },
   nav: { home: "ホーム", news: "ニュース", downloads: "ダウンロード", download: "ダウンロード", support: "支援", toggleMenu: "メニュー切替" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "WINDOWS 体験 · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Androidでパフォーマンス、柔軟性、高度なWindowsアプリサポートのために構築された高度なカスタムWinlator体験。", downloadLatest: "最新をダウンロード", supportFrost: "Frostを支援" },
@@ -1702,7 +1711,8 @@ const ja: Dictionary = {
 const zh: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "加载中...", error: "错误", downloads: "次下载", apk: "APK", external: "外部", unknownSize: "未知大小", released: "发布于" ,
     donationText: "Winlator@Frost 对所有人免费。如果您愿意帮助承担托管和开发费用，欢迎自愿捐助。",
-    supportProject: "支持本项目 →"
+    supportProject: "支持本项目 →",
+    learnMoreDonation: "了解有关 Frost 捐助的更多信息",
   },
   nav: { home: "首页", news: "新闻", downloads: "下载", download: "下载", support: "支持", toggleMenu: "切换菜单" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "WINDOWS 体验 · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "为在 Android 上实现性能、灵活性和高级 Windows 应用支持而打造的先进定制 Winlator 体验。", downloadLatest: "下载最新版", supportFrost: "支持 Frost" },
@@ -1875,7 +1885,8 @@ const zh: Dictionary = {
 const vi: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "Đang tải...", error: "Lỗi", downloads: "lượt tải", apk: "APK", external: "Ngoài", unknownSize: "Kích thước không xác định", released: "Phát hành" ,
     donationText: "Winlator@Frost miễn phí cho mọi người. Nếu bạn muốn giúp trang trải chi phí lưu trữ và phát triển, bạn có thể đóng góp tự nguyện.",
-    supportProject: "Ủng hộ dự án →"
+    supportProject: "Ủng hộ dự án →",
+    learnMoreDonation: "Tìm hiểu thêm về quyên góp Frost",
   },
   nav: { home: "Trang chủ", news: "Tin tức", downloads: "Tải xuống", download: "Tải xuống", support: "Ủng hộ", toggleMenu: "Chuyển menu" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "TRẢI NGHIỆM WINDOWS · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Trải nghiệm Winlator tùy chỉnh nâng cao được xây dựng cho hiệu suất, linh hoạt và hỗ trợ ứng dụng Windows nâng cao trên Android.", downloadLatest: "Tải bản mới nhất", supportFrost: "Ủng hộ Frost" },
@@ -2048,7 +2059,8 @@ const vi: Dictionary = {
 const th: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "กำลังโหลด...", error: "ข้อผิดพลาด", downloads: "ดาวน์โหลด", apk: "APK", external: "ภายนอก", unknownSize: "ขนาดไม่ทราบ", released: "เผยแพร่เมื่อ" ,
     donationText: "Winlator@Frost ฟรีสำหรับทุกคน หากคุณต้องการช่วยเรื่องค่าโฮสติ้งและการพัฒนา สามารถร่วมสมทบทุนได้ตามความสมัครใจ",
-    supportProject: "สนับสนุนโปรเจกต์ →"
+    supportProject: "สนับสนุนโปรเจกต์ →",
+    learnMoreDonation: "เรียนรู้เพิ่มเติมเกี่ยวกับการบริจาค Frost",
   },
   nav: { home: "หน้าแรก", news: "ข่าวสาร", downloads: "ดาวน์โหลด", download: "ดาวน์โหลด", support: "สนับสนุน", toggleMenu: "สลับเมนู" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "ประสบการณ์ WINDOWS · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "ประสบการณ์ Winlator ขั้นสูงที่ปรับแต่งเพื่อประสิทธิภาพ ความยืดหยุ่น และการรองรับแอป Windows ขั้นสูงบน Android", downloadLatest: "ดาวน์โหลดเวอร์ชันล่าสุด", supportFrost: "สนับสนุน Frost" },
@@ -2221,7 +2233,8 @@ const th: Dictionary = {
 const id: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "Memuat...", error: "Kesalahan", downloads: "unduhan", apk: "APK", external: "Eksternal", unknownSize: "Ukuran tidak diketahui", released: "Dirilis" ,
     donationText: "Winlator@Frost gratis untuk semua orang. Jika Anda ingin membantu menutup biaya hosting dan pengembangan, Anda dapat berkontribusi secara sukarela.",
-    supportProject: "Dukung proyek →"
+    supportProject: "Dukung proyek →",
+    learnMoreDonation: "Pelajari lebih lanjut tentang donasi Frost",
   },
   nav: { home: "Beranda", news: "Berita", downloads: "Unduhan", download: "Unduh", support: "Dukungan", toggleMenu: "Alihkan menu" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "PENGALAMAN WINDOWS · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Pengalaman Winlator canggih yang disesuaikan untuk performa, fleksibilitas, dan dukungan aplikasi Windows lanjutan di Android.", downloadLatest: "Unduh terbaru", supportFrost: "Dukung Frost" },
@@ -2394,7 +2407,8 @@ const id: Dictionary = {
 const pt: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "Carregando...", error: "Erro", downloads: "downloads", apk: "APK", external: "Externo", unknownSize: "Tamanho desconhecido", released: "Lançado" ,
     donationText: "Winlator@Frost é gratuito para todos. Se quiser ajudar a cobrir os custos de hospedagem e desenvolvimento, pode fazer uma contribuição voluntária.",
-    supportProject: "Apoiar o projeto →"
+    supportProject: "Apoiar o projeto →",
+    learnMoreDonation: "Saiba mais sobre doações para a Frost",
   },
   nav: { home: "Início", news: "Notícias", downloads: "Downloads", download: "Baixar", support: "Apoiar", toggleMenu: "Alternar menu" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "EXPERIÊNCIA WINDOWS · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "Uma experiência Winlator avançada e personalizada criada para desempenho, flexibilidade e suporte avançado a apps Windows no Android.", downloadLatest: "Baixar mais recente", supportFrost: "Apoiar Frost" },
@@ -2567,7 +2581,8 @@ const pt: Dictionary = {
 const ar: Dictionary = {
   common: { winlatorFrost: "WINLATOR@FROST", frost: "FROST", loading: "جاري التحميل...", error: "خطأ", downloads: "تحميل", apk: "APK", external: "خارجي", unknownSize: "حجم غير معروف", released: "صدر" ,
     donationText: "Winlator@Frost مجاني للجميع. إذا أردت المساعدة في تغطية تكاليف الاستضافة والتطوير، يمكنك التبرع طوعا.",
-    supportProject: "ادعم المشروع ←"
+    supportProject: "ادعم المشروع ←",
+    learnMoreDonation: "اعرف المزيد عن التبرع لـ Frost",
   },
   nav: { home: "الرئيسية", news: "الأخبار", downloads: "التحميلات", download: "حمّل", support: "الدعم", toggleMenu: "تبديل القائمة" },
   hero: { badgeStayFrosty: "Winlator@Frost · Stay Frosty", eyebrow: "تجربة WINDOWS · ANDROID", titleWinlator: "WINLATOR", titleFrost: "@FROST", description: "تجربة Winlator متقدمة مخصصة مبنية للأداء والمرونة ودعم تطبيقات Windows المتقدم على Android.", downloadLatest: "حمّل الأحدث", supportFrost: "ادعم Frost" },

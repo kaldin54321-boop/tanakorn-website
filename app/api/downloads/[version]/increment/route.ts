@@ -13,28 +13,36 @@ type RouteContext = {
   params: Promise<{ version: string }>;
 };
 
+const noStoreHeaders = { "Cache-Control": "no-store, no-cache, must-revalidate", Pragma: "no-cache" };
+
+// Single canonical read used by both GET and POST, so a value returned by
+// POST can never disagree with a later GET (the old cause of the visible
+// "+1 then revert" bug).
+async function getCanonicalCount(client: any, version: string): Promise<number | null> {
+  // Preferred: atomic RPC that sums releases + download_events (for public fallback)
+  try {
+    const { data: rpcCount, error: rpcErr } = await client.rpc("get_public_download_count", { p_version: version });
+    if (!rpcErr && typeof rpcCount === "number") return rpcCount;
+  } catch {}
+  const { data, error } = await client.from("releases").select("download_count").eq("version", version).maybeSingle();
+  if (error || !data) return null;
+  // Add fallback download_events count if the table exists (missing table -> 0)
+  let extra = 0;
+  try {
+    const { count } = await client.from("download_events").select("id", { count: "exact", head: true }).eq("version", version);
+    extra = count ?? 0;
+  } catch {}
+  return ((data as any).download_count ?? 0) + extra;
+}
+
 export async function GET(request: Request, context: RouteContext) {
   const { version: rawVersion } = await context.params;
   const version = decodeURIComponent(rawVersion);
   if (!version) return NextResponse.json({ success: false, message: "Version required" }, { status: 400 });
   const supabase = await createClient();
-  // Try public count via RPC that sums releases + download_events (for public fallback)
-  const { data: rpcCount, error: rpcErr } = await (supabase as any).rpc("get_public_download_count", { p_version: version });
-  if (!rpcErr && typeof rpcCount === "number") {
-    return NextResponse.json({ success: true, download_count: rpcCount }, { headers: { "Cache-Control": "no-store, no-cache, must-revalidate", Pragma: "no-cache" } });
-  }
-  const { data, error } = await supabase.from("releases").select("download_count").eq("version", version).maybeSingle();
-  if (error || !data) return NextResponse.json({ success: false, message: "Release not found" }, { status: 404 });
-  // Add fallback download_events count if RPC not available
-  let extra = 0;
-  try {
-    const { count } = await supabase.from("download_events").select("id", { count: "exact", head: true }).eq("version", version);
-    extra = count ?? 0;
-  } catch {}
-  return NextResponse.json(
-    { success: true, download_count: ((data as any).download_count ?? 0) + extra },
-    { headers: { "Cache-Control": "no-store, no-cache, must-revalidate", Pragma: "no-cache" } }
-  );
+  const count = await getCanonicalCount(supabase, version);
+  if (count === null) return NextResponse.json({ success: false, message: "Release not found" }, { status: 404 });
+  return NextResponse.json({ success: true, download_count: count }, { headers: noStoreHeaders });
 }
 
 export async function POST(request: Request, context: RouteContext) {
@@ -47,79 +55,86 @@ export async function POST(request: Request, context: RouteContext) {
   const supabaseAnon = await createClient();
   const serviceSupabase = getServiceSupabase();
 
-  // 1) Try atomic RPC via anon (SECURITY DEFINER allows anon if function exists)
-  const { data: rpcData, error: rpcError } = await (supabaseAnon as any).rpc("increment_download_count", { p_version: version });
-  if (!rpcError && rpcData !== null && rpcData !== undefined) {
-    const count = typeof rpcData === "number" ? rpcData : (rpcData as any).download_count ?? (rpcData as any);
-    const numeric = typeof count === "number" ? count : parseInt(String(count), 10);
-    if (!isNaN(numeric)) return NextResponse.json({ success: true, download_count: numeric }, { headers: { "Cache-Control": "no-store" } });
-  }
-  // If RPC missing (42883) or permission error, try service_role RPC
-  if (serviceSupabase) {
-    const { data: rpcData2, error: rpcError2 } = await (serviceSupabase as any).rpc("increment_download_count", { p_version: version });
-    if (!rpcError2 && rpcData2 !== null && rpcData2 !== undefined) {
-      const count = typeof rpcData2 === "number" ? rpcData2 : (rpcData2 as any).download_count ?? (rpcData2 as any);
-      const numeric = typeof count === "number" ? count : parseInt(String(count), 10);
-      if (!isNaN(numeric)) return NextResponse.json({ success: true, download_count: numeric }, { headers: { "Cache-Control": "no-store" } });
-    }
-  }
-
-  // 2) Fallback: use service_role to bypass RLS for public increments (counts all users, not just admin)
-  const supabaseForWrite = serviceSupabase || supabaseAnon;
-
-  const { data: release, error: fetchError } = await supabaseForWrite
-    .from("releases")
-    .select("id, download_count")
-    .eq("version", version)
-    .maybeSingle();
-
-  if (fetchError || !release) {
-    // If anon read failed due to RLS, try service
-    if (serviceSupabase && supabaseForWrite === supabaseAnon) {
-      const { data: release2, error: fetchError2 } = await serviceSupabase.from("releases").select("id, download_count").eq("version", version).maybeSingle();
-      if (!fetchError2 && release2) {
-        const newCount = ((release2 as any).download_count ?? 0) + 1;
-        const { error: updateError2 } = await serviceSupabase.from("releases").update({ download_count: newCount }).eq("id", (release2 as any).id);
-        if (!updateError2) return NextResponse.json({ success: true, download_count: newCount }, { headers: { "Cache-Control": "no-store" } });
-      }
-    }
+  const baseline = await getCanonicalCount(supabaseAnon, version);
+  if (baseline === null) {
     return NextResponse.json({ success: false, message: "Release not found" }, { status: 404 });
   }
 
-  const newCount = (release.download_count ?? 0) + 1;
+  // Verify helper: only trust an increment path if a fresh canonical
+  // re-read proves the count actually grew. RLS can make an UPDATE
+  // "succeed" with 0 rows affected, which previously produced a fake
+  // +1 that the next poll reverted.
+  const verify = async (): Promise<number | null> => {
+    const fresh = await getCanonicalCount(supabaseAnon, version);
+    if (fresh !== null && fresh >= baseline + 1) return fresh;
+    return null;
+  };
 
-  const { error: updateError } = await supabaseForWrite
-    .from("releases")
-    .update({ download_count: newCount })
-    .eq("id", release.id);
-
-  if (updateError) {
-    // If anon update failed due to RLS, try service_role, then fallback to public download_events table (counts for all users)
-    if (serviceSupabase && supabaseForWrite === supabaseAnon && (updateError.code === "42501" || updateError.message.toLowerCase().includes("policy") || updateError.message.toLowerCase().includes("permission"))) {
-      const { error: updateError2 } = await serviceSupabase.from("releases").update({ download_count: newCount }).eq("id", release.id);
-      if (!updateError2) return NextResponse.json({ success: true, download_count: newCount }, { headers: { "Cache-Control": "no-store" } });
+  // 1) Atomic RPC via anon (SECURITY DEFINER allows anon if function exists)
+  try {
+    const { data: rpcData, error: rpcError } = await (supabaseAnon as any).rpc("increment_download_count", { p_version: version });
+    if (!rpcError && rpcData !== null && rpcData !== undefined) {
+      const verified = await verify();
+      if (verified !== null) return NextResponse.json({ success: true, download_count: verified }, { headers: { "Cache-Control": "no-store" } });
     }
-    // Fallback for public users when RLS blocks and no service_role: insert into download_events (public)
+  } catch {}
+  // 1b) Same RPC via service_role if configured
+  if (serviceSupabase) {
     try {
-      const anonForEvents = await createClient();
-      const { error: insertErr } = await anonForEvents.from("download_events").insert({ version });
-      if (!insertErr) {
-        // Return sum of releases download_count + download_events count
-        const { data: fresh } = await anonForEvents.from("releases").select("download_count").eq("id", release.id).maybeSingle();
-        let extra = 0;
-        try {
-          const { count } = await anonForEvents.from("download_events").select("id", { count: "exact", head: true }).eq("version", version);
-          extra = count ?? 0;
-        } catch {}
-        const total = ((fresh as any)?.download_count ?? release.download_count ?? 0) + extra;
-        return NextResponse.json({ success: true, download_count: total }, { headers: { "Cache-Control": "no-store" } });
+      const { data: rpcData2, error: rpcError2 } = await (serviceSupabase as any).rpc("increment_download_count", { p_version: version });
+      if (!rpcError2 && rpcData2 !== null && rpcData2 !== undefined) {
+        const verified = await verify();
+        if (verified !== null) return NextResponse.json({ success: true, download_count: verified }, { headers: { "Cache-Control": "no-store" } });
       }
     } catch {}
-    if (updateError.code === "42703" || updateError.message.includes("download_count")) {
-      return NextResponse.json({ success: true, download_count: newCount, warning: "download_count column missing, create it via SQL: run supabase-download-count.sql in Supabase SQL Editor" }, { headers: { "Cache-Control": "no-store" } });
-    }
-    return NextResponse.json({ success: false, message: updateError.message }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, download_count: newCount }, { headers: { "Cache-Control": "no-store" } });
+  // 2) Read + update with verification (works when RLS/policies allow it)
+  const writer = serviceSupabase || supabaseAnon;
+  try {
+    const { data: release, error: fetchError } = await writer
+      .from("releases")
+      .select("id, download_count")
+      .eq("version", version)
+      .maybeSingle();
+    if (!fetchError && release) {
+      const newCount = ((release as any).download_count ?? 0) + 1;
+      const { data: updated, error: updateError } = await writer
+        .from("releases")
+        .update({ download_count: newCount })
+        .eq("id", (release as any).id)
+        .select("download_count")
+        .maybeSingle();
+      // updateError null does NOT prove persistence (RLS can silently
+      // affect 0 rows), so the re-read below is the real check.
+      if (!updateError && updated) {
+        const verified = await verify();
+        if (verified !== null) return NextResponse.json({ success: true, download_count: verified }, { headers: { "Cache-Control": "no-store" } });
+      }
+    }
+  } catch {}
+
+  // 3) Fallback for public users when releases writes are blocked:
+  // insert into download_events (public) — only if the table exists.
+  try {
+    const { error: insertErr } = await supabaseAnon.from("download_events").insert({ version });
+    if (!insertErr) {
+      const verified = await verify();
+      if (verified !== null) return NextResponse.json({ success: true, download_count: verified }, { headers: { "Cache-Control": "no-store" } });
+    }
+  } catch {}
+
+  // Nothing persisted: be honest instead of returning a fabricated +1
+  // (a fake number is exactly what the UI later "reverted").
+  // Durable fix: run supabase-download-count.sql in the Supabase SQL Editor
+  // (creates the atomic RPC + public policies), then increments persist.
+  return NextResponse.json(
+    {
+      success: false,
+      needsSetup: true,
+      download_count: baseline,
+      message: "Download counter is not configured in the database. Run supabase-download-count.sql in the Supabase SQL Editor to enable persistent counts.",
+    },
+    { status: 500, headers: { "Cache-Control": "no-store" } }
+  );
 }
