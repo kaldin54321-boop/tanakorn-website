@@ -71,12 +71,7 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ lo
       <div className="article-donation donation-card">
         <p className="donation-card-title">{dict.releaseDetail?.supportHelp || dict.hero.supportFrost}</p>
         <p className="donation-card-text">{dict.common.donationText}</p>
-        <div className="support-buttons">
-          <a href="https://ko-fi.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button kofi">Ko-fi</a>
-          <a href="https://buymeacoffee.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button bmc">Buy Me a Coffee</a>
-          <a href="https://paypal.me/MUHAMMADINISMAIL" target="_blank" rel="noopener noreferrer" className="support-button paypal">PayPal</a>
-        </div>
-        <Link href={`/${locale}/support`} className="text-link" style={{ display: "inline-block", marginTop: "14px" }}>{dict.common.supportProject}</Link>
+        <Link href={`/${locale}/support`} className="button-secondary">{dict.common.learnMoreDonation}</Link>
       </div>
       <div style={{ marginTop:"60px", paddingTop:"30px", borderTop:"1px solid var(--border)"}}>
         <Link href={`/${locale}/news`} className="button-secondary">{dict.news.backToNewsArrow}</Link>

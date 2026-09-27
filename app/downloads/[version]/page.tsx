@@ -298,12 +298,7 @@ export default async function ReleasePage({
                 <div className="view-release-support donation-card">
                   <p className="donation-card-title">Support Frost — Help keep it free</p>
                   <p className="donation-card-text">Winlator@Frost is free for everyone. If you would like to help cover hosting and development costs, you can make a voluntary contribution.</p>
-                  <div className="support-buttons">
-                    <a href="https://ko-fi.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button kofi">Ko-fi</a>
-                    <a href="https://buymeacoffee.com/haikalmanheem" target="_blank" rel="noopener noreferrer" className="support-button bmc">Buy Me a Coffee</a>
-                    <a href="https://paypal.me/MUHAMMADINISMAIL" target="_blank" rel="noopener noreferrer" className="support-button paypal">PayPal</a>
-                  </div>
-                  <Link href="/support" className="text-link" style={{ display: "inline-block", marginTop: "14px" }}>Support the project →</Link>
+                  <Link href="/support" className="button-secondary">Learn more about Frost donation</Link>
                 </div>
 
               </>
