@@ -22,7 +22,10 @@ export default function GameStoresCarousel({
 }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const touchX = useRef<number | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [dragX, setDragX] = useState(0);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const startX = useRef<number | null>(null);
 
   const goTo = useCallback(
     (next: number) => {
@@ -35,12 +38,27 @@ export default function GameStoresCarousel({
   const prev = useCallback(() => goTo(index - 1), [goTo, index]);
 
   useEffect(() => {
-    if (paused || images.length <= 1) return;
+    if (paused || dragging || images.length <= 1) return;
     const id = setInterval(() => {
       setIndex((i) => (i + 1) % images.length);
     }, AUTOPLAY_MS);
     return () => clearInterval(id);
-  }, [paused, images.length]);
+  }, [paused, dragging, images.length]);
+
+  const endDrag = useCallback(
+    (clientX: number) => {
+      if (startX.current === null) return;
+      const dx = clientX - startX.current;
+      const width = viewportRef.current?.clientWidth ?? 0;
+      const threshold = Math.min(90, width * 0.2);
+      if (dx <= -threshold) next();
+      else if (dx >= threshold) prev();
+      startX.current = null;
+      setDragging(false);
+      setDragX(0);
+    },
+    [next, prev]
+  );
 
   if (images.length === 0) return null;
 
@@ -49,37 +67,58 @@ export default function GameStoresCarousel({
       className="game-stores-carousel"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      onTouchStart={(e) => {
-        touchX.current = e.touches[0].clientX;
-      }}
-      onTouchEnd={(e) => {
-        if (touchX.current === null) return;
-        const dx = e.changedTouches[0].clientX - touchX.current;
-        touchX.current = null;
-        if (Math.abs(dx) < 24) return;
-        if (dx < 0) next();
-        else prev();
-      }}
     >
-      <div className="game-stores-track">
-        {images.map((src, i) => (
-          <div
-            key={`${src}-${i}`}
-            className={
-              i === index
-                ? "game-stores-slide is-active"
-                : "game-stores-slide"
-            }
-            aria-hidden={i !== index}
-          >
-            <img
-              src={src}
-              alt={`Featured game ${i + 1}`}
-              loading={i === 0 ? "eager" : "lazy"}
-              draggable={false}
-            />
-          </div>
-        ))}
+      <div
+        ref={viewportRef}
+        className="game-stores-viewport"
+        onPointerDown={(e) => {
+          startX.current = e.clientX;
+          setDragging(true);
+          setDragX(0);
+          (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+        }}
+        onPointerMove={(e) => {
+          if (startX.current === null) return;
+          setDragX(e.clientX - startX.current);
+        }}
+        onPointerUp={(e) => endDrag(e.clientX)}
+        onPointerCancel={() => {
+          startX.current = null;
+          setDragging(false);
+          setDragX(0);
+        }}
+      >
+        <div
+          className="game-stores-track"
+          style={{
+            transform: `translateX(calc(${-index * 100}% + ${dragX}px))`,
+            transition: dragging ? "none" : undefined,
+          }}
+        >
+          {images.map((src, i) => (
+            <div
+              key={`${src}-${i}`}
+              className="game-stores-slide"
+              aria-hidden={i !== index}
+            >
+              <img
+                src={src}
+                alt=""
+                aria-hidden
+                className="game-stores-slide-backdrop"
+                loading="lazy"
+                draggable={false}
+              />
+              <img
+                src={src}
+                alt={`Featured game ${i + 1}`}
+                className="game-stores-slide-image"
+                loading={i === 0 ? "eager" : "lazy"}
+                draggable={false}
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
       <button
