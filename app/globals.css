@@ -5250,6 +5250,9 @@ textarea:focus-visible {
 }
 
 .game-stores-badges span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 6px 12px;
   border: 1px solid rgba(141, 220, 255, 0.25);
   border-radius: 999px;
@@ -5258,6 +5261,13 @@ textarea:focus-visible {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
+}
+
+.game-stores-logo {
+  width: 16px;
+  height: 16px;
+  display: block;
+  flex-shrink: 0;
 }
 
 .game-stores-carousel {

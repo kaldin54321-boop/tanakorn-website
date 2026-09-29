@@ -268,10 +268,10 @@ export default async function Home() {
           </p>
 
           <div className="game-stores-badges">
-            <span>STEAM</span>
-            <span>EPIC</span>
-            <span>GOG</span>
-            <span>AMAZON</span>
+            <span><img src="/images/stores/steam.svg" alt="Steam logo" className="game-stores-logo" loading="lazy" />STEAM</span>
+            <span><img src="/images/stores/epic-games.svg" alt="Epic Games logo" className="game-stores-logo" loading="lazy" />EPIC</span>
+            <span><img src="/images/stores/gog.svg" alt="GOG logo" className="game-stores-logo" loading="lazy" />GOG</span>
+            <span><img src="/images/stores/amazon-games.svg" alt="Amazon Games logo" className="game-stores-logo" loading="lazy" />AMAZON</span>
           </div>
         </div>
 
