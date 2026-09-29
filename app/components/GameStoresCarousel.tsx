@@ -154,9 +154,6 @@ export default function GameStoresCarousel({
         ))}
       </div>
 
-      <div className="game-stores-counter">
-        {index + 1} / {images.length}
-      </div>
     </div>
   );
 }
