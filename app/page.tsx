@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import GameStoresCarousel from "@/app/components/GameStoresCarousel";
+
 import {
   getPublicReleases,
 } from "@/lib/releases";
@@ -248,6 +250,33 @@ export default async function Home() {
         additional features and improvements
         that enhance usability and performance.
       </p>
+    </div>
+
+    <div className="feature-card feature-card-wide">
+      <div className="feature-card-wide-body">
+        <div className="feature-card-wide-text">
+          <div className="feature-icon">🏪</div>
+
+          <h3>Built-in Game Stores</h3>
+
+          <p>
+            Download your favorite games directly inside the emulator are now
+            become more easier, just login the game stores of the Steam, Epic,
+            GOG and Amazon and you&apos;re ready to play your favorite games
+            inside your own games library by just downloading the selected
+            games inside your game library and launch it!.
+          </p>
+
+          <div className="game-stores-badges">
+            <span>STEAM</span>
+            <span>EPIC</span>
+            <span>GOG</span>
+            <span>AMAZON</span>
+          </div>
+        </div>
+
+        <GameStoresCarousel />
+      </div>
     </div>
 
   </div>

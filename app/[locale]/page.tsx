@@ -1,4 +1,5 @@
 import Link from "next/link";
+import GameStoresCarousel from "@/app/components/GameStoresCarousel";
 import { getPublicReleases } from "@/lib/releases";
 import { getPublicNews } from "@/lib/news";
 import { getPublicYoutubeVideos } from "@/lib/youtube";
@@ -89,6 +90,22 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <div className="feature-card"><div className="feature-icon">🎮</div><h3>{dict.home.gamingTitle}</h3><p>{dict.home.gamingDesc}</p></div>
           <div className="feature-card"><div className="feature-icon">⚙</div><h3>{dict.home.customizationTitle}</h3><p>{dict.home.customizationDesc}</p></div>
           <div className="feature-card"><div className="feature-icon">❄</div><h3>{dict.home.frostExpTitle}</h3><p>{dict.home.frostExpDesc}</p></div>
+          <div className="feature-card feature-card-wide">
+            <div className="feature-card-wide-body">
+              <div className="feature-card-wide-text">
+                <div className="feature-icon">🏪</div>
+                <h3>{dict.home.gameStoresTitle}</h3>
+                <p>{dict.home.gameStoresDesc}</p>
+                <div className="game-stores-badges">
+                  <span>STEAM</span>
+                  <span>EPIC</span>
+                  <span>GOG</span>
+                  <span>AMAZON</span>
+                </div>
+              </div>
+              <GameStoresCarousel />
+            </div>
+          </div>
         </div>
       </section>
 
