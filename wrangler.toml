@@ -6,6 +6,17 @@ main = ".open-next/worker.js"
 [assets]
 directory = ".open-next/assets"
 
+[vars]
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_F9ZsRgEQFH4wQTKu79RL3A_E0DUOVUI"
+NEXT_PUBLIC_SUPABASE_URL = "https://xcahjcxoacyxouvkcvcq.supabase.co"
+PORT = "10000"
+S3_ACCESS_KEY_ID = "7C37DD09EA58D16FCA18"
+S3_BUCKET = "winlator-releases"
+S3_ENDPOINT = "https://s3.filebase.com/"
+S3_REGION = "us-east-1"
+S3_SECRET_ACCESS_KEY = "4Y19Z0N5ZFsZwH5FKavd5qPM61k9A0ewgkLWkQor"
+S3_SIGNATURE_VERSION = "v4"
+
 # Cloudflare Pages — winlator-frost.pages.dev (free, no card)
 # For static export (CF_PAGES=1), out/ is static homepage
 # For SSR via opennext (Workers), use main = ".open-next/worker.js" instead
