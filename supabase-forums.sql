@@ -34,6 +34,11 @@ CREATE TABLE IF NOT EXISTS public.forum_replies (
 CREATE INDEX IF NOT EXISTS forums_timestamp_idx ON public.forums (timestamp DESC);
 CREATE INDEX IF NOT EXISTS forum_replies_forum_idx ON public.forum_replies (forum_id, timestamp ASC);
 
+-- Edit support: marks threads/replies the author changed after publishing.
+-- (ADD COLUMN IF NOT EXISTS keeps this re-runnable on existing installs.)
+ALTER TABLE public.forums ADD COLUMN IF NOT EXISTS edited BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE public.forum_replies ADD COLUMN IF NOT EXISTS edited BOOLEAN NOT NULL DEFAULT false;
+
 ALTER TABLE public.forums ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.forum_replies ENABLE ROW LEVEL SECURITY;
 
@@ -58,6 +63,29 @@ DROP POLICY IF EXISTS "Public insert forum replies" ON public.forum_replies;
 CREATE POLICY "Public insert forum replies"
 ON public.forum_replies FOR INSERT TO anon, authenticated
 WITH CHECK (true);
+
+-- Edit/delete go through the API routes, which verify the author email
+-- against the stored one before touching the DB (the app has no accounts).
+-- These policies let the anon key perform those verified writes.
+DROP POLICY IF EXISTS "Public update forums" ON public.forums;
+CREATE POLICY "Public update forums"
+ON public.forums FOR UPDATE TO anon, authenticated
+USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public delete forums" ON public.forums;
+CREATE POLICY "Public delete forums"
+ON public.forums FOR DELETE TO anon, authenticated
+USING (true);
+
+DROP POLICY IF EXISTS "Public update forum replies" ON public.forum_replies;
+CREATE POLICY "Public update forum replies"
+ON public.forum_replies FOR UPDATE TO anon, authenticated
+USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public delete forum replies" ON public.forum_replies;
+CREATE POLICY "Public delete forum replies"
+ON public.forum_replies FOR DELETE TO anon, authenticated
+USING (true);
 
 -- ============================================================
 -- Attachment storage for forum images/videos (public read, anon upload)

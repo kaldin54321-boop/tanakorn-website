@@ -35,6 +35,7 @@ type ForumRow = {
   body: string;
   username: string;
   timestamp: number;
+  edited: boolean;
   image_url: string | null;
   video_url: string | null;
 };
@@ -53,6 +54,7 @@ type PublicReply = {
   email: string;
   body: string;
   timestamp: number;
+  edited: boolean;
 };
 
 export async function GET() {
@@ -61,7 +63,7 @@ export async function GET() {
 
     const { data: forums, error } = await supabase
       .from("forums")
-      .select("id,title,body,username,timestamp,image_url,video_url")
+      .select("id,title,body,username,timestamp,edited,image_url,video_url")
       .order("timestamp", { ascending: false })
       .limit(MAX_FORUMS);
 
@@ -74,13 +76,13 @@ export async function GET() {
     if (ids.length > 0) {
       const { data: replies, error: replyError } = await supabase
         .from("forum_replies")
-        .select("id,forum_id,username,body,timestamp")
+        .select("id,forum_id,username,body,timestamp,edited")
         .in("forum_id", ids)
         .order("timestamp", { ascending: true });
 
       if (replyError) throw replyError;
 
-      for (const r of (replies ?? []) as ReplyRow[]) {
+      for (const r of (replies ?? []) as (ReplyRow & { edited: boolean })[]) {
         const list = repliesByForum.get(r.forum_id) ?? [];
         const reply: PublicReply = {
           id: r.id,
@@ -88,6 +90,7 @@ export async function GET() {
           email: "",
           body: r.body,
           timestamp: r.timestamp,
+          edited: !!r.edited,
         };
         list.push(reply);
         repliesByForum.set(r.forum_id, list);
@@ -104,6 +107,7 @@ export async function GET() {
         username: f.username,
         email: "",
         timestamp: f.timestamp,
+        edited: !!f.edited,
         ...(isHttpUrl(f.image_url) ? { imageUrl: (f.image_url as string).trim() } : {}),
         ...(isHttpUrl(f.video_url) ? { videoUrl: (f.video_url as string).trim() } : {}),
         replies: repliesByForum.get(f.id) ?? [],

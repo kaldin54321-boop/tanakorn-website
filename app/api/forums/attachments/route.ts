@@ -56,7 +56,18 @@ export async function POST(request: Request) {
       .from("forum-attachments")
       .upload(key, buffer, { contentType: file.type, upsert: false });
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      // The common cause is a missing bucket (supabase-forums.sql not run).
+      // Surface it plainly so app authors can diagnose instead of guessing.
+      if (/bucket not found/i.test(uploadError.message)) {
+        console.error("POST /api/forums/attachments: storage bucket 'forum-attachments' is missing.");
+        return NextResponse.json(
+          { error: "Attachment storage is not configured on the server." },
+          { status: 503 }
+        );
+      }
+      throw uploadError;
+    }
 
     const { data: publicUrlData } = supabase.storage.from("forum-attachments").getPublicUrl(key);
     return NextResponse.json({ url: publicUrlData.publicUrl });
