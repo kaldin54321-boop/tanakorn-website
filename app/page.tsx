@@ -526,7 +526,44 @@ export default async function Home() {
 
 </section>
 
-<section className="cta-section">
+ <section className="open-source-section">
+
+   <div className="section-heading">
+     <p>OPEN SOURCE</p>
+     <h2>Open Source</h2>
+   </div>
+
+   <div className="open-source-card">
+
+     <p className="open-source-text">
+       The source code of this project are available now!
+     </p>
+
+     <div className="open-source-actions">
+       <a
+         href="https://gitlab.com/haikalmuhammadin/winlator-frost"
+         target="_blank"
+         rel="noopener noreferrer"
+         className="button-primary"
+       >
+         Click to see the source code in the Gitlab
+       </a>
+
+       <a
+         href="https://github.com/kaldin54321-boop/Winlator-tanakorn"
+         target="_blank"
+         rel="noopener noreferrer"
+         className="button-secondary"
+       >
+         Click to see the source code in the Github
+       </a>
+     </div>
+
+   </div>
+
+ </section>
+
+ <section className="cta-section">
 
   <div className="cta-card">
 
