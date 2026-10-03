@@ -249,6 +249,7 @@ export default function DownloadButton({
     // natively with resume/progress. Works after Render shutdown.
     if (isExternal) {
       setError("");
+      // Stay on "Downloading..." until the page is refreshed (no auto-reset).
       setRedirecting(true);
       // Plain anchor navigation to the API, which 302-redirects to the
       // resolved direct link. (Avoids next lint no-location-assign rule and
@@ -258,8 +259,6 @@ export default function DownloadButton({
       document.body.appendChild(a);
       a.click();
       a.remove();
-      // Reset the notice shortly in case navigation is blocked (popup blocker etc.)
-      setTimeout(() => setRedirecting(false), 5000);
       return;
     }
 
@@ -312,7 +311,7 @@ export default function DownloadButton({
             style={{ width: "100%" }}
             disabled={redirecting}
           >
-            {redirecting ? "STARTING DOWNLOAD…" : "DOWNLOAD APK"}
+            {redirecting ? "Downloading..." : "DOWNLOAD APK"}
           </button>
           <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "4px", alignItems: "center" }}>
             <span style={{ fontSize: "13px", fontWeight: 800, color: "var(--frost)", letterSpacing: "0.03em" }}>
@@ -327,16 +326,14 @@ export default function DownloadButton({
                   ? `${formatBytes(displaySize!)} • resumable`
                   : "Resumable download"}
             </span>
-            {isExternal && (
+            {isExternal && redirecting && (
               <span style={{ fontSize: "11px", color: "var(--muted)", textAlign: "center" }}>
-                {redirecting
-                  ? "Redirecting to file host… if nothing happens, "
-                  : "Having trouble? "}
+                {"Downloading... "}
                 <a
                   href={apiDownloadUrl}
                   style={{ color: "var(--frost)", textDecoration: "underline" }}
                 >
-                  click here to retry
+                  Download Again
                 </a>
               </span>
             )}

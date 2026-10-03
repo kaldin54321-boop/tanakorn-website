@@ -249,6 +249,7 @@ export default function DownloadButton({
     // natively with resume/progress. Works after Render shutdown.
     if (isExternal) {
       setError("");
+      // Stay on "Downloading..." until the page is refreshed (no auto-reset).
       setRedirecting(true);
       // Plain anchor navigation to the API, which 302-redirects to the
       // resolved direct link. (Avoids next lint no-location-assign rule and
@@ -258,8 +259,6 @@ export default function DownloadButton({
       document.body.appendChild(a);
       a.click();
       a.remove();
-      // Reset the notice shortly in case navigation is blocked (popup blocker etc.)
-      setTimeout(() => setRedirecting(false), 5000);
       return;
     }
 
@@ -327,8 +326,9 @@ export default function DownloadButton({
                   ? `${formatBytes(displaySize!)} • ${t.resumable}`
                   : t.resumableDownload}
             </span>
-            {isExternal && (
+            {isExternal && redirecting && (
               <span style={{ fontSize: "11px", color: "var(--muted)", textAlign: "center" }}>
+                {`${t.downloading} `}
                 <a
                   href={apiDownloadUrl}
                   style={{ color: "var(--frost)", textDecoration: "underline" }}
