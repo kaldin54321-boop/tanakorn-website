@@ -44,297 +44,44 @@ function getLocalFilePath(dbPath: string): string {
   return path.join(/*turbopackIgnore: true*/ process.cwd(), dbPath);
 }
 
-async function proxyExternalUrl(
-  externalUrl: string,
-  request: Request,
-  fileName: string,
-  fileSize: number | null,
-  fileType: string | null
-) {
-  const range = request.headers.get("range");
-  const headers: Record<string, string> = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    Accept: "*/*",
-  };
-
-  if (range) {
-    headers["Range"] = range;
-  }
-
-  const isCloudflare = !!process.env.CF_PAGES || !!process.env.CLOUDFLARE_PAGES || request.headers.get("cf-ray") || (globalThis as any).caches !== undefined;
-  const isMediaFireShare = externalUrl.includes("mediafire.com/file/") || externalUrl.includes("mediafire.com/view/");
-  const isMediaFireDirect = externalUrl.includes("download") && externalUrl.includes("mediafire.com");
-  const isMediaFireAny = externalUrl.includes("mediafire.com");
-  // On Cloudflare, MediaFire is blocked on Workers IP and large file proxy via Workers double-stream causes 1102 CPU error
-  // Fix: redirect to Render proxy-file directly - client fetch follows 302 and streams from Render with progress bar, no Workers double-proxy, no HTML error
-  // This keeps download on-site (via Render, not MediaFire directly) and prevents direct link sharing, with fresh direct link resolved at download time
-  if (isCloudflare && isMediaFireAny) {
-    const renderProxyUrl = `https://tanakorn-website.onrender.com/api/proxy-file?url=${encodeURIComponent(externalUrl)}&filename=${encodeURIComponent(fileName)}`;
-    // Preserve Range for resume - redirect will be followed by client's fetch which will re-send Range to Render
-    return NextResponse.redirect(renderProxyUrl, 302);
-  }
-  // Resolve third-party URL to direct link (Google Drive, MediaFire, Dropbox, etc.) for non-MediaFire or non-Cloudflare
-  // (MediaFire on Cloudflare already handled above via Render redirect to avoid 1102 double-proxy)
-  let resolved = await resolveExternalUrl(externalUrl);
-  let directUrl = resolved.directUrl;
-
-  if (resolved.provider === "mega") {
-    throw new Error(
-      "Mega.nz links require opening externally (mega requires decryption in browser). Please use a direct host like Google Drive (share link), MediaFire direct, R2/S3, or GitHub Releases."
-    );
-  }
-
-  // For Google Drive large files, drive may return HTML with confirm token instead of file.
-  // On Cloudflare, MediaFire/Google Drive may block Workers IP and return HTML - fallback to Render proxy for actual file
-  const fetchDirect = async (url: string, attempt = 0): Promise<Response> => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000);
-    try {
-      const fetchHeaders: Record<string, string> = { ...headers };
-      // Add Cloudflare bypass headers for MediaFire/Google Drive
-      if (isCloudflare && (url.includes("mediafire.com") || url.includes("drive.google.com"))) {
-        fetchHeaders["Accept-Language"] = "en-US,en;q=0.9";
-        fetchHeaders["Referer"] = url.includes("mediafire.com") ? "https://www.mediafire.com/" : "https://drive.google.com/";
-      }
-      const res = await fetch(url, {
-        headers: fetchHeaders,
-        signal: controller.signal,
-        redirect: "follow",
-        cf: { cacheTtl: 0, cacheEverything: false },
-      } as any);
-      clearTimeout(timeoutId);
-
-      // Handle Google Drive confirm token page (large file virus scan warning)
-      const ct = res.headers.get("Content-Type") || "";
-      if (resolved.provider === "google_drive" && ct.includes("text/html") && attempt === 0) {
-        const html = await res.text();
-        // Look for export=download&confirm=... or uuid
-        const m = html.match(/href="([^"]*export=download[^"]*confirm=[^"]*)"/i);
-        if (m) {
-          const confirmUrl = m[1].replace(/&amp;/g, "&");
-          // Make absolute if relative
-          const abs = confirmUrl.startsWith("http") ? confirmUrl : `https://drive.google.com${confirmUrl}`;
-          return fetchDirect(abs, 1);
-        }
-        // Alternative pattern: confirm token in anchor
-        const m2 = html.match(/confirm=([0-9A-Za-z_-]+)/);
-        const mId = html.match(/id=([0-9A-Za-z_-]+)/);
-        // If html contains download link, try extraction
-        const dl = html.match(/https:\/\/drive\.google\.com\/uc\?export=download[^"'\s<>]+/i);
-        if (dl) return fetchDirect(dl[0].replace(/&amp;/g, "&"), 1);
-      }
-
-      // If MediaFire/Google Drive returned HTML (share page or virus scan) - try to extract direct link or fallback to Render for on-site proxy
-      if (ct.includes("text/html") && !ct.includes("application/vnd.android") && attempt === 0) {
-        const cd = res.headers.get("Content-Disposition") || "";
-        if (!cd.includes("attachment") && !url.match(/\.(apk|zip|rar)(\?|$)/i)) {
-          const htmlForCheck = await res.clone().text().catch(() => "");
-          if (htmlLooksLikeFileHostPage(htmlForCheck)) {
-            // Try to extract MediaFire direct link from HTML (Cloudflare may need extra headers)
-            if (url.includes("mediafire.com") || htmlForCheck.toLowerCase().includes("mediafire")) {
-              const mMedia = htmlForCheck.match(/href="(https:\/\/download[^"]+)"/i) || htmlForCheck.match(/https:\/\/download\d*\.mediafire\.com[^"'\s<>]+/i);
-              if (mMedia) {
-                const direct = (mMedia[1] || mMedia[0]).replace(/&amp;/g, "&");
-                try {
-                  const directRes = await fetch(direct, {
-                    headers: { ...headers, Referer: "https://www.mediafire.com/", Accept: "*/*" },
-                    signal: controller.signal,
-                    redirect: "follow",
-                    cf: { cacheTtl: 0, cacheEverything: false },
-                  } as any);
-                  const ct2 = directRes.headers.get("Content-Type") || "";
-                  const cd2 = directRes.headers.get("Content-Disposition") || "";
-                  if (!ct2.includes("text/html") || cd2.includes("attachment") || directRes.headers.get("Content-Length")) {
-                    clearTimeout(timeoutId);
-                    return directRes;
-                  }
-                } catch {}
-              }
-            }
-            // Cloudflare fallback: for any HTML on Cloudflare (MediaFire/Google Drive share pages blocked), try Render proxy for on-site download
-            // This keeps download inside website with progress bar, no new-tab redirect, prevents direct link sharing
-            if (isCloudflare) {
-              // First try Render resolver to get fresh direct link (for share links)
-              try {
-                const renderResolver = `https://tanakorn-website.onrender.com/api/resolve-external?url=${encodeURIComponent(externalUrl)}`;
-                const rCtrl = new AbortController();
-                const rTid = setTimeout(() => rCtrl.abort(), 10000);
-                const rRes = await fetch(renderResolver, { headers: { "User-Agent": "Mozilla/5.0" }, signal: rCtrl.signal } as any);
-                clearTimeout(rTid);
-                if (rRes.ok) {
-                  const rJson = await rRes.json().catch(() => null);
-                  if (rJson && rJson.success && rJson.directUrl && rJson.directUrl !== url) {
-                    // Try to fetch the resolved direct link on-site via Cloudflare (with Render-fetched direct link)
-                    const rDirectRes = await fetch(rJson.directUrl, {
-                      headers: { ...headers, Referer: "https://www.mediafire.com/", Accept: "*/*" },
-                      signal: controller.signal,
-                      redirect: "follow",
-                      cf: { cacheTtl: 0, cacheEverything: false },
-                    } as any);
-                    const rCt = rDirectRes.headers.get("Content-Type") || "";
-                    const rCd = rDirectRes.headers.get("Content-Disposition") || "";
-                    if (!rCt.includes("text/html") || rCd.includes("attachment") || rDirectRes.headers.get("Content-Length")) {
-                      clearTimeout(timeoutId);
-                      return rDirectRes;
-                    }
-                    // If still HTML on Cloudflare (direct link also blocked), fallback to Render proxy-file for on-site streaming
-                    const renderProxy = `https://tanakorn-website.onrender.com/api/proxy-file?url=${encodeURIComponent(rJson.directUrl)}&filename=${encodeURIComponent(fileName)}`;
-                    const pRes = await fetch(renderProxy, {
-                      headers: range ? { Range: range } : {},
-                      signal: controller.signal,
-                    } as any);
-                    if (pRes.ok || pRes.status === 206) {
-                      clearTimeout(timeoutId);
-                      return pRes;
-                    }
-                  }
-                }
-              } catch {}
-              // Generic fallback for any HTML on Cloudflare: proxy file via Render (keeps on-site with progress bar)
-              try {
-                const renderProxy = `https://tanakorn-website.onrender.com/api/proxy-file?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(fileName)}`;
-                const pRes = await fetch(renderProxy, {
-                  headers: range ? { Range: range } : {},
-                  signal: controller.signal,
-                } as any);
-                if (pRes.ok || pRes.status === 206) {
-                  clearTimeout(timeoutId);
-                  return pRes;
-                }
-                // Also try with original externalUrl if url is already direct
-                if (url !== externalUrl) {
-                  const renderProxy2 = `https://tanakorn-website.onrender.com/api/proxy-file?url=${encodeURIComponent(externalUrl)}&filename=${encodeURIComponent(fileName)}`;
-                  const pRes2 = await fetch(renderProxy2, {
-                    headers: range ? { Range: range } : {},
-                    signal: controller.signal,
-                  } as any);
-                  if (pRes2.ok || pRes2.status === 206) {
-                    clearTimeout(timeoutId);
-                    return pRes2;
-                  }
-                }
-              } catch {}
-            }
-            throw new Error(
-              "External URL returned an HTML page instead of the APK file. Please use a direct download link. For MediaFire: open the share link, click download, copy the direct link (download*.mediafire.com). For Google Drive: ensure share link is correct and file is not restricted."
-            );
-          }
-        }
-      }
-      // Generic Cloudflare fallback for any HTML file response (e.g., direct link blocked on Workers IP) - proxy via Render for on-site
-      if (isCloudflare && ct.includes("text/html") && attempt === 0) {
-        const cd = res.headers.get("Content-Disposition") || "";
-        if (!cd.includes("attachment") && url.match(/\.(apk|zip|rar)/i)) {
-          try {
-            const renderProxy = `https://tanakorn-website.onrender.com/api/proxy-file?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(fileName)}`;
-            const pRes = await fetch(renderProxy, {
-              headers: range ? { Range: range } : {},
-              signal: controller.signal,
-            } as any);
-            if (pRes.ok || pRes.status === 206) {
-              clearTimeout(timeoutId);
-              return pRes;
-            }
-          } catch {}
-        }
-      }
-
-      return res;
-    } catch (err) {
-      clearTimeout(timeoutId);
-      throw err;
+async function redirectToExternalUrl(externalUrl: string) {
+  // Cloudflare-safe external download: 302 redirect, zero proxy bandwidth.
+  //
+  // Why redirect instead of proxy-streaming:
+  // - Cloudflare Workers/Pages cannot reliably proxy multi-hundred-MB APKs
+  //   (CPU/memory/time limits, error 1102 on double-stream).
+  // - MediaFire/Google Drive frequently block Workers datacenter IPs, so a
+  //   server-side fetch returns an HTML/challenge page instead of the APK.
+  // - A 302 redirect costs ~0 bandwidth on Cloudflare (no paid bandwidth
+  //   like Render) and lets the *user's browser* (residential IP) fetch the
+  //   file directly with native resume/progress. No Render server needed.
+  const trimmed = externalUrl.trim();
+  let directUrl = trimmed;
+  try {
+    const resolved = await resolveExternalUrl(trimmed);
+    if (resolved.provider === "mega") {
+      throw new Error(
+        "Mega.nz links require opening externally (mega requires decryption in browser). Please open the Mega link directly, or use a direct host like Google Drive (share link), MediaFire, R2/S3, or GitHub Releases."
+      );
     }
-  };
-
-  function htmlLooksLikeFileHostPage(html: string): boolean {
-    if (!html) return false;
-    const lower = html.toLowerCase();
-    return lower.includes("mediafire") || lower.includes("drive.google.com") || lower.includes("<html");
+    if (
+      resolved.directUrl &&
+      resolved.directUrl.startsWith("http") &&
+      resolved.provider !== "mediafire_unresolved"
+    ) {
+      directUrl = resolved.directUrl;
+    }
+    // If MediaFire share link could not be resolved to a direct
+    // download*.mediafire.com URL (e.g. Workers IP blocked), fall back to
+    // redirecting to the original share page itself. The user's browser can
+    // render it and click Download — this works where a server fetch fails.
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("Mega.nz")) throw err;
+    // Any other resolver failure: redirect to the original URL as-is.
+    directUrl = trimmed;
   }
 
-  const res = await fetchDirect(directUrl);
-
-  if (!res.ok && res.status !== 206) {
-    throw new Error(`External download failed: ${res.status} ${res.statusText}`);
-  }
-
-  // Get content info from external response
-  const contentLength = res.headers.get("Content-Length");
-  const contentRange = res.headers.get("Content-Range");
-  const contentDisposition = res.headers.get("Content-Disposition");
-  let contentType = res.headers.get("Content-Type") || fileType || "application/vnd.android.package-archive";
-  // If external returned HTML but we expected APK, clean content-type
-  if (contentType.includes("text/html")) {
-    contentType = fileType || "application/vnd.android.package-archive";
-  }
-  // Try to get better filename from headers or resolved hint
-  const resolvedFileName = parseFileNameFromHeaders(contentDisposition, contentType, directUrl, fileName);
-  const finalFileName = resolvedFileName || fileName;
-
-  let totalSize = fileSize;
-  if (contentRange) {
-    const m = contentRange.match(/bytes \d+-\d+\/(\d+)/);
-    if (m) totalSize = parseInt(m[1], 10);
-  } else if (contentLength && !range) {
-    totalSize = parseInt(contentLength, 10);
-  } else if (contentLength && range) {
-    const parts = range.replace(/bytes=/, "").split("-");
-    const start = parseInt(parts[0], 10);
-    totalSize = parseInt(contentLength, 10) + start;
-  }
-
-  // Create response headers - force download on-site (no redirect)
-  const responseHeaders: Record<string, string> = {
-    "Content-Type": contentType,
-    "Content-Disposition": `attachment; filename="${finalFileName}"`,
-    "Accept-Ranges": "bytes",
-    "Cache-Control": "public, max-age=3600",
-    "X-External-Provider": resolved.provider,
-  };
-
-  if (totalSize && !range && contentLength) {
-    responseHeaders["Content-Length"] = totalSize.toString();
-  } else if (totalSize && !range) {
-    // if we have totalSize but no contentLength, still set
-    responseHeaders["Content-Length"] = totalSize.toString();
-  }
-
-  if (res.status === 206 && contentRange) {
-    responseHeaders["Content-Range"] = contentRange;
-  }
-  // If we have content-length from upstream and we are not ranged, set it
-  if (!range && contentLength && !responseHeaders["Content-Length"]) {
-    responseHeaders["Content-Length"] = contentLength;
-  }
-
-  // Stream the response body - stay on-site, no redirect to external
-  const reader = res.body?.getReader();
-  if (!reader) {
-    throw new Error("No readable stream from external URL");
-  }
-
-  const webStream = new ReadableStream({
-    async start(controller) {
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (value) controller.enqueue(value);
-        }
-        controller.close();
-      } catch (err) {
-        controller.error(err);
-      }
-    },
-    cancel() {
-      reader.cancel();
-    },
-  });
-
-  return new Response(webStream, {
-    status: range ? 206 : 200,
-    headers: responseHeaders,
-  });
+  return NextResponse.redirect(directUrl, 302);
 }
 
 export async function HEAD(
@@ -532,8 +279,21 @@ export async function GET(
             resolved_url: resolved.directUrl,
             provider: resolved.provider,
           });
-        } catch (e) {
-          return NextResponse.json({ success: false, message: e instanceof Error ? e.message : "Info failed" }, { status: 500 });
+        } catch {
+          // Never fail info on Cloudflare (resolver fetches can be blocked
+          // on Workers IPs) — fall back to DB values so the button still
+          // renders and the redirect download still works.
+          return NextResponse.json({
+            success: true,
+            version: release.version,
+            file_name: release.file_name || `Winlator@Frost-${release.version}.apk`,
+            file_size: release.file_size,
+            content_type: release.file_type || "application/vnd.android.package-archive",
+            external_url: release.external_url,
+            resolved_url: release.external_url,
+            provider: "external",
+            fallback: true,
+          });
         }
       } else if (release.file_path) {
         // Local/S3 file info
@@ -549,24 +309,19 @@ export async function GET(
       return NextResponse.json({ success: false, message: "No file" }, { status: 404 });
     }
 
-    // External URL - proxy the download on-site (no redirect, progress bar in release page)
-    // Keeps download inside website to prevent direct link sharing, as requested
+    // External URL - 302 redirect to the resolved direct link (Cloudflare-safe).
+    // No proxy streaming (avoids Workers bandwidth/CPU limits and IP blocks),
+    // no Render dependency. The browser downloads directly with native
+    // resume/progress. Download count is recorded client-side via /increment.
     if (release.external_url) {
-      const fileName = release.file_name || `Winlator@Frost-${release.version}.apk`;
       try {
-        return await proxyExternalUrl(
-          release.external_url,
-          request,
-          fileName,
-          release.file_size,
-          release.file_type
-        );
+        return await redirectToExternalUrl(release.external_url);
       } catch (err) {
-        console.error("External URL proxy error (on-site):", err);
+        console.error("External URL redirect error:", err);
         return NextResponse.json(
           {
             success: false,
-            message: `Failed to download from external URL: ${err instanceof Error ? err.message : "Unknown error"}. Please ensure the external URL is a direct download link (download*.mediafire.com for MediaFire, uc?export=download for Google Drive, or R2/S3/GitHub direct). For MediaFire share links, open the share link, click Download, and copy the direct link.`,
+            message: `Failed to resolve external download URL: ${err instanceof Error ? err.message : "Unknown error"}.`,
           },
           { status: 502, headers: { "Cache-Control": "no-store" } }
         );
@@ -647,9 +402,9 @@ export async function GET(
           {
             success: false,
             message:
-              "APK file not found. File was on previous local host (PC uploads/ lost on Render redeploy). Re-upload via Admin → Releases on https://tanakorn-website.onrender.com - now goes to Filebase S3 5GB (persistent, not Supabase 50MB, not PC-dependent). For 239MB+, ensure Filebase env is set on Render.",
+              "APK file not found on this host. Re-upload via Admin → Releases to S3-compatible storage (persistent), or set an External APK URL (MediaFire / Google Drive share link works — downloads redirect directly, no server bandwidth).",
             file_path: release.file_path,
-            hint: "Set Filebase S3 env on Render: S3_ENDPOINT=https://s3.filebase.com, S3_BUCKET=winlator-releases, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, then re-upload APK. Or use External APK URL field.",
+            hint: "Set S3 env (S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY), then re-upload the APK. Or use the External APK URL field.",
           },
           { status: 404 }
         );

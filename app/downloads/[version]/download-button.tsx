@@ -22,7 +22,6 @@ export default function DownloadButton({
   fileName: initialFileName,
   fileSize,
   isExternal = false,
-  externalUrl,
   initialDownloadCount = null,
 }: Props) {
   const [fileName, setFileName] = useState(initialFileName);
@@ -34,6 +33,8 @@ export default function DownloadButton({
   const [error, setError] = useState("");
   const [downloadCount, setDownloadCount] = useState<number>(initialDownloadCount ?? 0);
   const [resolvedInfo, setResolvedInfo] = useState<{ fileName?: string; fileSize?: number | null } | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
+  const apiDownloadUrl = `/api/downloads/${encodeURIComponent(version)}`;
   const abortRef = useRef<AbortController | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const receivedRef = useRef(0);
@@ -229,11 +230,6 @@ export default function DownloadButton({
 
   function handleDownload() {
     if (downloading && !paused) return;
-    setBytesReceived(0);
-    setProgress(0);
-    setError("");
-    chunksRef.current = [];
-    receivedRef.current = 0;
     // Optimistic +1 right away, then reconcile with the confirmed server
     // value (clamped so the visible count never moves backwards).
     setDownloadCount((prev) => prev + 1);
@@ -245,6 +241,33 @@ export default function DownloadButton({
         }
       })
       .catch(() => {});
+
+    // External links (MediaFire / Drive / any host): direct redirect download.
+    // Cloudflare-safe — zero server bandwidth (unlike Render proxy), no
+    // Workers streaming, no in-memory Blob (avoids mobile OOM on 300MB+ APKs).
+    // The API 302-redirects to the resolved direct link; the browser downloads
+    // natively with resume/progress. Works after Render shutdown.
+    if (isExternal) {
+      setError("");
+      setRedirecting(true);
+      // Plain anchor navigation to the API, which 302-redirects to the
+      // resolved direct link. (Avoids next lint no-location-assign rule and
+      // lets the browser handle the external download natively.)
+      const a = document.createElement("a");
+      a.href = apiDownloadUrl;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // Reset the notice shortly in case navigation is blocked (popup blocker etc.)
+      setTimeout(() => setRedirecting(false), 5000);
+      return;
+    }
+
+    setBytesReceived(0);
+    setProgress(0);
+    setError("");
+    chunksRef.current = [];
+    receivedRef.current = 0;
     startDownload(0, []);
   }
 
@@ -287,8 +310,9 @@ export default function DownloadButton({
             onClick={handleDownload}
             className="download-button"
             style={{ width: "100%" }}
+            disabled={redirecting}
           >
-            DOWNLOAD APK
+            {redirecting ? "STARTING DOWNLOAD…" : "DOWNLOAD APK"}
           </button>
           <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "4px", alignItems: "center" }}>
             <span style={{ fontSize: "13px", fontWeight: 800, color: "var(--frost)", letterSpacing: "0.03em" }}>
@@ -297,12 +321,25 @@ export default function DownloadButton({
             <span style={{ fontSize: "11px", color: "var(--muted)", textAlign: "center" }}>
               {isExternal
                 ? hasSize
-                  ? `External • ${formatBytes(displaySize!)}`
-                  : "External • Size detected on download"
+                  ? `External • ${formatBytes(displaySize!)} • direct download`
+                  : "External • Direct download"
                 : hasSize
                   ? `${formatBytes(displaySize!)} • resumable`
                   : "Resumable download"}
             </span>
+            {isExternal && (
+              <span style={{ fontSize: "11px", color: "var(--muted)", textAlign: "center" }}>
+                {redirecting
+                  ? "Redirecting to file host… if nothing happens, "
+                  : "Having trouble? "}
+                <a
+                  href={apiDownloadUrl}
+                  style={{ color: "var(--frost)", textDecoration: "underline" }}
+                >
+                  click here to retry
+                </a>
+              </span>
+            )}
           </div>
         </>
       )}
@@ -393,7 +430,7 @@ export default function DownloadButton({
 
           <p style={{ marginTop: "10px", fontSize: "11px", color: "var(--muted)", lineHeight: "1.5", textAlign: "center" }}>
             {isExternal
-              ? "Proxied through this website • No new tab • File saved to device storage on finish • Supports Range/resume when host allows"
+              ? "Direct download from file host • Browser handles progress & resume • No new account needed"
               : "Resumable download • Auto-resume on failure • Supports Range requests"}
             {paused && " • Paused - click Resume to continue from " + formatBytes(bytesReceived)}
           </p>
@@ -402,7 +439,7 @@ export default function DownloadButton({
 
       {!downloading && !paused && progress === 0 && (
         <p style={{ marginTop: "10px", fontSize: "11px", color: "var(--muted)", textAlign: "center" }}>
-          {isExternal ? "One-click • On-site download • No redirect to external host" : "Resumable • Progress shown • Pause/Resume supported"}
+          {isExternal ? "One-click • Direct from file host • Free Cloudflare bandwidth • No Render needed" : "Resumable • Progress shown • Pause/Resume supported"}
         </p>
       )}
 
