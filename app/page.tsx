@@ -1,5 +1,6 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-
+import { HOME_DESCRIPTION, HOME_TITLE } from "@/lib/seo";
 import GameStoresCarousel from "@/app/components/GameStoresCarousel";
 
 import {
@@ -16,6 +17,21 @@ import {
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: HOME_TITLE,
+  description: HOME_DESCRIPTION,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "Winlator@Frost",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+  },
+};
 
 function formatReleaseDate(
   date: string

@@ -1,7 +1,18 @@
+import type { Metadata } from "next";
+import { cookies, headers } from "next/headers";
+import { SITE_URL } from "@/lib/seo";
 import ViewTracker from "./components/ViewTracker";
 import DonationDangerModal from "./components/DonationDangerModal";
 import "./globals.css";
-import { cookies, headers } from "next/headers";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  applicationName: "Winlator@Frost",
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 export default async function RootLayout({
   children,

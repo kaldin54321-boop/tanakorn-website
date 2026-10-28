@@ -1,16 +1,47 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import GameStoresCarousel from "@/app/components/GameStoresCarousel";
 import { getPublicReleases } from "@/lib/releases";
 import { getPublicNews } from "@/lib/news";
 import { getPublicYoutubeVideos } from "@/lib/youtube";
 import { getDictionary } from "@/lib/i18n/dictionaries";
-import { locales, type Locale } from "@/lib/i18n/config";
+import { defaultLocale, locales, type Locale } from "@/lib/i18n/config";
+import { HOME_DESCRIPTION, HOME_TITLE } from "@/lib/seo";
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const canonical = `/${locale}`;
+  const languages = {
+    ...Object.fromEntries(locales.map((item) => [item, `/${item}`])),
+    "x-default": `/${defaultLocale}`,
+  };
+
+  return {
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+    alternates: {
+      canonical,
+      languages,
+    },
+    openGraph: {
+      type: "website",
+      url: canonical,
+      siteName: "Winlator@Frost",
+      title: HOME_TITLE,
+      description: HOME_DESCRIPTION,
+    },
+  };
 }
 
 function formatReleaseDate(date: string, locale: string) {
