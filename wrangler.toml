@@ -5,6 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 main = ".open-next/worker.js"
 [assets]
 directory = ".open-next/assets"
+html_handling = "none"
 
 [vars]
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_F9ZsRgEQFH4wQTKu79RL3A_E0DUOVUI"
