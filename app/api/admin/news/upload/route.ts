@@ -1,22 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import fs from "fs";
 import path from "path";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
-
-function ensureDir(dir: string) {
-  fs.mkdirSync(dir, { recursive: true });
-}
-
-function getLocalNewsUploadsRoot(): string {
-  const isHF = !!process.env.SPACE_ID || fs.existsSync("/data");
-  if (isHF) return path.join("/data", "uploads", "news");
-  // Local/dev and Render: use public folder so Next.js serves statically
-  return path.join(process.cwd(), "public", "uploads", "news");
-}
 
 export async function POST(request: Request) {
   try {
@@ -60,32 +48,21 @@ export async function POST(request: Request) {
     const key = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${baseName}${ext}`;
     const storagePath = `news/${key}`;
 
-    // Try Supabase Storage first
-    try {
-      const { error: uploadError } = await supabase.storage.from("news-images").upload(storagePath, buffer, {
-        contentType: file.type,
-        upsert: false,
-      });
-      if (!uploadError) {
-        const { data: publicUrlData } = supabase.storage.from("news-images").getPublicUrl(storagePath);
-        const publicUrl = publicUrlData.publicUrl;
-        return NextResponse.json({ success: true, url: publicUrl, path: storagePath, fileName: safeName, size: file.size, type: file.type, alt: alt || null, host: "supabase" });
-      }
-      console.warn("Supabase news-images upload failed, falling back to local:", uploadError.message);
-    } catch (e) {
-      console.warn("Supabase upload exception, fallback to local:", e);
+    const { error: uploadError } = await supabase.storage.from("news-images").upload(storagePath, buffer, {
+      contentType: file.type,
+      upsert: false,
+    });
+
+    if (uploadError) {
+      console.error("Supabase news-images upload failed:", uploadError.message);
+      const message = /bucket not found/i.test(uploadError.message)
+        ? "News image storage is not configured on the server."
+        : `Image storage upload failed: ${uploadError.message}`;
+      return NextResponse.json({ success: false, message }, { status: 503 });
     }
 
-    // Fallback to local filesystem (self-hosted/HF)
-    const uploadsRoot = getLocalNewsUploadsRoot();
-    ensureDir(uploadsRoot);
-    const localPath = path.join(uploadsRoot, key);
-    fs.writeFileSync(localPath, buffer);
-    // Return URL that can be served via Next.js static or via /uploads/news/... if configured
-    // For local, we return /uploads/news/<key> which should be served from public or via API
-    // Also try to make it accessible via /api/admin/news/upload fallback static
-    const localUrl = `/uploads/news/${key}`;
-    return NextResponse.json({ success: true, url: localUrl, path: localPath, fileName: safeName, size: file.size, type: file.type, alt: alt || null, host: "local" });
+    const { data: publicUrlData } = supabase.storage.from("news-images").getPublicUrl(storagePath);
+    return NextResponse.json({ success: true, url: publicUrlData.publicUrl, path: storagePath, fileName: safeName, size: file.size, type: file.type, alt: alt || null, host: "supabase" });
   } catch (error) {
     console.error("News image upload error:", error);
     return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Upload failed" }, { status: 500 });

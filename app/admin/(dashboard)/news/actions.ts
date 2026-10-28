@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { parseNewsContent } from "@/lib/news-helpers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -77,6 +78,15 @@ export async function createNewsArticle(
   if (!content) {
     throw new Error(
       "Article content is required."
+    );
+  }
+
+  if (
+    imageUrl.startsWith("blob:") ||
+    parseNewsContent(content).some((block) => block.imageUrl?.startsWith("blob:"))
+  ) {
+    throw new Error(
+      "An image upload failed or is still in progress. Reattach the image before saving."
     );
   }
 
@@ -285,6 +295,15 @@ export async function updateNewsArticle(
   if (!content) {
     throw new Error(
       "Article content is required."
+    );
+  }
+
+  if (
+    imageUrl.startsWith("blob:") ||
+    parseNewsContent(content).some((block) => block.imageUrl?.startsWith("blob:"))
+  ) {
+    throw new Error(
+      "An image upload failed or is still in progress. Reattach the image before saving."
     );
   }
 

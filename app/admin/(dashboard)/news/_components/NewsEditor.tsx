@@ -32,7 +32,7 @@ function parseContentToBlocks(content: string): ParagraphBlock[] {
   try {
     const parsed = JSON.parse(content);
     if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === "object" && "text" in parsed[0]) {
-      return parsed.map((b: any) => ({
+      return parsed.map((b: Partial<ParagraphBlock> & { image?: string | null }) => ({
         id: b.id || Math.random().toString(36).slice(2),
         text: String(b.text ?? ""),
         imageUrl: b.imageUrl || b.image || null,
@@ -62,6 +62,7 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
   const [coverUrl, setCoverUrl] = useState<string>(initialData?.image_url ?? "");
   const [coverPreview, setCoverPreview] = useState<string>(initialData?.image_url ?? "");
   const [coverUploading, setCoverUploading] = useState(false);
+  const [uploadingBlocks, setUploadingBlocks] = useState<Set<string>>(() => new Set());
   const [blocks, setBlocks] = useState<ParagraphBlock[]>(() => parseContentToBlocks(initialData?.content ?? ""));
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -115,9 +116,10 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
       setError("Image too large: max 10 MB.");
       return;
     }
-    setError("");
-    // Show local preview immediately via object URL, then upload
+    const previousImageUrl = blocks.find((block) => block.id === blockId)?.imageUrl ?? null;
     const localPreview = URL.createObjectURL(file);
+    setError("");
+    setUploadingBlocks((prev) => new Set(prev).add(blockId));
     setBlocks((prev) => prev.map((b) => (b.id === blockId ? { ...b, imageUrl: localPreview, imageAlt: b.imageAlt || "" } : b)));
     try {
       const fd = new FormData();
@@ -125,12 +127,17 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
       const res = await fetch("/api/admin/news/upload", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || "Image upload failed");
-      setBlocks((prev) => prev.map((b) => (b.id === blockId ? { ...b, imageUrl: data.url } : b)));
-      // revoke local preview after upload
-      URL.revokeObjectURL(localPreview);
+      setBlocks((prev) => prev.map((b) => (b.id === blockId && b.imageUrl === localPreview ? { ...b, imageUrl: data.url } : b)));
     } catch (err) {
+      setBlocks((prev) => prev.map((b) => (b.id === blockId && b.imageUrl === localPreview ? { ...b, imageUrl: previousImageUrl } : b)));
       setError(err instanceof Error ? err.message : "Image upload failed");
-      // keep local preview but mark error
+    } finally {
+      URL.revokeObjectURL(localPreview);
+      setUploadingBlocks((prev) => {
+        const next = new Set(prev);
+        next.delete(blockId);
+        return next;
+      });
     }
   };
 
@@ -140,7 +147,7 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
 
   const removeParagraph = (id: string) => {
     if (blocks.length <= 1) {
-      setBlocks([{ id: Math.random().toString(36).slice(2), text: "", imageUrl: null }]);
+      setBlocks([{ id, text: "", imageUrl: null }]);
       return;
     }
     setBlocks((prev) => prev.filter((b) => b.id !== id));
@@ -156,6 +163,14 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (coverUploading || uploadingBlocks.size > 0) {
+      setError("Please wait for all image uploads to finish before saving.");
+      return;
+    }
+    if (coverUrl.startsWith("blob:") || blocks.some((block) => block.imageUrl?.startsWith("blob:"))) {
+      setError("An image upload failed or is still in progress. Reattach the image before saving.");
+      return;
+    }
     setError("");
     setSubmitting(true);
     const formData = new FormData();
@@ -289,11 +304,12 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
                 )}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                   <label className="button-secondary" style={{ cursor: "pointer", padding: "7px 12px", fontSize: 12, margin: 0 }}>
-                    {block.imageUrl ? "Change image" : "Attach image"}
+                    {uploadingBlocks.has(block.id) ? "Uploading..." : block.imageUrl ? "Change image" : "Attach image"}
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
                       style={{ display: "none" }}
+                      disabled={uploadingBlocks.has(block.id)}
                       onChange={(e) => {
                         const f = e.target.files?.[0] || null;
                         if (f) handleParagraphImage(block.id, f);
@@ -318,8 +334,8 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
 
       <div className="admin-form-actions">
         <Link href="/admin/news" className="button-secondary">CANCEL</Link>
-        <button type="submit" className="button-primary" disabled={submitting}>
-          {submitting ? "Saving..." : mode === "create" ? "CREATE ARTICLE" : "SAVE CHANGES"}
+        <button type="submit" className="button-primary" disabled={submitting || coverUploading || uploadingBlocks.size > 0}>
+          {submitting ? "Saving..." : coverUploading || uploadingBlocks.size > 0 ? "WAITING FOR UPLOADS..." : mode === "create" ? "CREATE ARTICLE" : "SAVE CHANGES"}
         </button>
       </div>
     </form>
