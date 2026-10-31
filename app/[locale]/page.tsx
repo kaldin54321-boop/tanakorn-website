@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import GameStoresCarousel from "@/app/components/GameStoresCarousel";
+import { GitHubLogo, GitLabLogo } from "@/app/components/RepoLogos";
+import { GITHUB_REPO_URL, GITLAB_REPO_URL } from "@/lib/repos";
 import { getPublicReleases } from "@/lib/releases";
 import { getPublicNews } from "@/lib/news";
 import { getPublicYoutubeVideos } from "@/lib/youtube";
@@ -240,11 +242,20 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
 
       <section className="open-source-section">
         <div className="section-heading"><p>OPEN SOURCE</p><h2>Open Source</h2></div>
-        <div className="open-source-card">
-          <p className="open-source-text">The source code of this project are available now!</p>
-          <div className="open-source-actions">
-            <a href="https://gitlab.com/haikalmuhammadin/winlator-frost" target="_blank" rel="noopener noreferrer" className="button-primary">Click to see the source code in the Gitlab</a>
-            <a href="https://github.com/kaldin54321-boop/Winlator-tanakorn" target="_blank" rel="noopener noreferrer" className="button-secondary">Click to see the source code in the Github</a>
+        <div className="source-code-box">
+          <p className="donation-card-title">SOURCE CODE</p>
+          <div className="donation-card source-code-card">
+            <p className="donation-card-text">{dict.home.sourceCodeDesc}</p>
+            <div className="source-code-actions">
+              <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer" className="button-secondary repo-button">
+                <GitHubLogo className="repo-button-icon" />
+                View on GitHub
+              </a>
+              <a href={GITLAB_REPO_URL} target="_blank" rel="noopener noreferrer" className="button-secondary repo-button">
+                <GitLabLogo className="repo-button-icon repo-button-icon--gitlab" />
+                View on GitLab
+              </a>
+            </div>
           </div>
         </div>
       </section>

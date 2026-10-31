@@ -1,5 +1,7 @@
 import Link from "next/link";
 import ShareButtons from "@/app/components/ShareButtons";
+import { GitHubLogo, GitLabLogo } from "@/app/components/RepoLogos";
+import { GITHUB_REPO_URL, GITLAB_REPO_URL } from "@/lib/repos";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { locales } from "@/lib/i18n/config";
 
@@ -23,6 +25,15 @@ const TIERS = [
   "❤ Frost Contributor",
   "🛠 Frost Developer Supporter",
 ] as const;
+
+type OtherWay = {
+  icon: string;
+  title: string;
+  desc: string;
+  href?: string;
+  share: boolean;
+  starRepos?: boolean;
+};
 
 export default async function SupportPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -67,8 +78,8 @@ export default async function SupportPage({ params }: { params: Promise<{ locale
     { name: "Shigarui", amount: s.wallAmt2, tier: TIERS[2] },
   ];
 
-  const otherWays = [
-    { icon: "⭐", title: s.o1T, desc: s.o1D, href: undefined, share: false },
+  const otherWays: OtherWay[] = [
+    { icon: "⭐", title: s.o1T, desc: s.o1D, href: undefined, share: false, starRepos: true },
     { icon: "🐛", title: s.o2T, desc: s.o2D, href: DISCORD_URL, share: false },
     { icon: "📖", title: s.o3T, desc: s.o3D, href: undefined, share: false },
     { icon: "📢", title: s.o4T, desc: s.o4D, href: undefined, share: true },
@@ -288,7 +299,28 @@ export default async function SupportPage({ params }: { params: Promise<{ locale
               <div className="feature-icon">{item.icon}</div>
               <h3>{item.title}</h3>
               <p>{item.desc}</p>
-              {item.share ? (
+              {item.starRepos ? (
+                <div className="repo-star-actions">
+                  <a
+                    href={GITHUB_REPO_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="button-secondary repo-star-button"
+                  >
+                    <GitHubLogo className="repo-star-icon" />
+                    Star the repo in Github
+                  </a>
+                  <a
+                    href={GITLAB_REPO_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="button-secondary repo-star-button"
+                  >
+                    <GitLabLogo className="repo-star-icon repo-star-icon--gitlab" />
+                    Star the repo in Gitlab
+                  </a>
+                </div>
+              ) : item.share ? (
                 <ShareButtons
                   url="https://tanakorn-website.onrender.com"
                   title={s.title}

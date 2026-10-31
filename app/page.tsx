@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { HOME_DESCRIPTION, HOME_TITLE } from "@/lib/seo";
 import GameStoresCarousel from "@/app/components/GameStoresCarousel";
+import { GitHubLogo, GitLabLogo } from "@/app/components/RepoLogos";
+import { GITHUB_REPO_URL, GITLAB_REPO_URL } from "@/lib/repos";
 
 import {
   getPublicReleases,
@@ -548,30 +550,43 @@ export default async function Home() {
      <h2>Open Source</h2>
    </div>
 
-   <div className="open-source-card">
+   <div className="source-code-box">
 
-     <p className="open-source-text">
-       The source code of this project are available now!
+     <p className="donation-card-title">
+       SOURCE CODE
      </p>
 
-     <div className="open-source-actions">
-       <a
-         href="https://gitlab.com/haikalmuhammadin/winlator-frost"
-         target="_blank"
-         rel="noopener noreferrer"
-         className="button-primary"
-       >
-         Click to see the source code in the Gitlab
-       </a>
+     <div className="donation-card source-code-card">
 
-       <a
-         href="https://github.com/kaldin54321-boop/Winlator-tanakorn"
-         target="_blank"
-         rel="noopener noreferrer"
-         className="button-secondary"
-       >
-         Click to see the source code in the Github
-       </a>
+       <p className="donation-card-text">
+         The source code of the Winlator@Frost project are now available!
+         Please kindly help by contribute to us for help growing this project
+         to have a more better features and provide a lot of useful features
+         to all the users
+       </p>
+
+       <div className="source-code-actions">
+         <a
+           href={GITHUB_REPO_URL}
+           target="_blank"
+           rel="noopener noreferrer"
+           className="button-secondary repo-button"
+         >
+           <GitHubLogo className="repo-button-icon" />
+           View on GitHub
+         </a>
+
+         <a
+           href={GITLAB_REPO_URL}
+           target="_blank"
+           rel="noopener noreferrer"
+           className="button-secondary repo-button"
+         >
+           <GitLabLogo className="repo-button-icon repo-button-icon--gitlab" />
+           View on GitLab
+         </a>
+       </div>
+
      </div>
 
    </div>
