@@ -40,7 +40,7 @@ export default async function NewsPage({ params }: { params: Promise<{ locale: s
             <article key={article.id} className="news-list-card">
               <div className="news-list-image" style={article.image_url ? { padding: 0, overflow: "hidden" } as React.CSSProperties : undefined}>
                 {article.image_url ? (
-                  <img src={article.image_url} alt={article.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} loading="lazy" />
+                  <img src={article.image_url} alt={article.title} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} loading="lazy" />
                 ) : (
                   "NEWS"
                 )}

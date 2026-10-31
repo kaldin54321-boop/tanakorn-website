@@ -400,7 +400,7 @@ export default async function Home() {
 
           <div className="news-image" style={article.image_url ? { padding: 0, overflow: "hidden" } as React.CSSProperties : undefined}>
             {article.image_url ? (
-              <img src={article.image_url} alt={article.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} loading="lazy" />
+              <img src={article.image_url} alt={article.title} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} loading="lazy" />
             ) : (
               (article.category || "NEWS").toUpperCase().slice(0, 12)
             )}

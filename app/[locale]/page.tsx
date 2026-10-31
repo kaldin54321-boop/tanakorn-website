@@ -169,9 +169,9 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <div className="news-grid">
             {latestNews.map((article) => (
               <article key={article.id} className="news-card">
-                <div className="news-image" style={(article as any).image_url ? { padding: 0, overflow: "hidden" } as React.CSSProperties : undefined}>
-                  {(article as any).image_url ? (
-                    <img src={(article as any).image_url} alt={article.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} loading="lazy" />
+                <div className="news-image" style={article.image_url ? { padding: 0, overflow: "hidden" } as React.CSSProperties : undefined}>
+                  {article.image_url ? (
+                    <img src={article.image_url} alt={article.title} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} loading="lazy" />
                   ) : (
                     (article.category || dict.news.general).toUpperCase().slice(0,12)
                   )}

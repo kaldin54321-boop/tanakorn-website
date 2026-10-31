@@ -243,11 +243,11 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
       <section className="admin-form-section">
         <h2>Cover Image (optional)</h2>
         <p className="admin-page-description" style={{ marginBottom: 12 }}>
-          Optional cover image shown on news listing and homepage. Upload from device storage or paste URL below. Recommended 16:9, max 10 MB.
+          Optional cover image shown on news listing and homepage. Upload from device storage or paste URL below. Any aspect ratio is supported, max 10 MB.
         </p>
         {coverPreview && (
           <div style={{ marginBottom: 12, border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", maxWidth: 480 }}>
-            <img src={coverPreview} alt="Cover preview" style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} />
+            <img src={coverPreview} alt="Cover preview" style={{ width: "100%", height: "auto", display: "block" }} />
           </div>
         )}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
@@ -297,7 +297,7 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", marginBottom: 6 }}>Attached image for this paragraph (optional)</div>
                 {block.imageUrl ? (
                   <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", maxWidth: 520, marginBottom: 8 }}>
-                    <img src={block.imageUrl} alt={block.imageAlt || `Paragraph ${idx + 1} image`} style={{ width: "100%", height: 200, objectFit: "cover", display: "block" }} />
+                    <img src={block.imageUrl} alt={block.imageAlt || `Paragraph ${idx + 1} image`} style={{ width: "100%", height: "auto", display: "block" }} />
                   </div>
                 ) : (
                   <div style={{ border: "1px dashed var(--border)", borderRadius: 8, padding: 16, textAlign: "center", color: "var(--muted)", fontSize: 12, marginBottom: 8 }}>No image attached for this paragraph</div>

@@ -48,21 +48,34 @@ export async function POST(request: Request) {
     const key = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${baseName}${ext}`;
     const storagePath = `news/${key}`;
 
-    const { error: uploadError } = await supabase.storage.from("news-images").upload(storagePath, buffer, {
-      contentType: file.type,
-      upsert: false,
-    });
+    // The public attachment bucket is a durable fallback when news-images was never provisioned.
+    const buckets = ["news-images", "forum-attachments"];
+    let bucket: string | null = null;
+    let uploadErrorMessage = "";
 
-    if (uploadError) {
-      console.error("Supabase news-images upload failed:", uploadError.message);
-      const message = /bucket not found/i.test(uploadError.message)
+    for (const candidate of buckets) {
+      const { error } = await supabase.storage.from(candidate).upload(storagePath, buffer, {
+        contentType: file.type,
+        upsert: false,
+      });
+      if (!error) {
+        bucket = candidate;
+        break;
+      }
+      uploadErrorMessage = error.message;
+      console.warn(`Supabase ${candidate} upload failed:`, error.message);
+    }
+
+    if (!bucket) {
+      console.error("Supabase news image upload failed:", uploadErrorMessage);
+      const message = /bucket not found/i.test(uploadErrorMessage)
         ? "News image storage is not configured on the server."
-        : `Image storage upload failed: ${uploadError.message}`;
+        : `Image storage upload failed: ${uploadErrorMessage}`;
       return NextResponse.json({ success: false, message }, { status: 503 });
     }
 
-    const { data: publicUrlData } = supabase.storage.from("news-images").getPublicUrl(storagePath);
-    return NextResponse.json({ success: true, url: publicUrlData.publicUrl, path: storagePath, fileName: safeName, size: file.size, type: file.type, alt: alt || null, host: "supabase" });
+    const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(storagePath);
+    return NextResponse.json({ success: true, url: publicUrlData.publicUrl, path: storagePath, fileName: safeName, size: file.size, type: file.type, alt: alt || null, host: "supabase", bucket });
   } catch (error) {
     console.error("News image upload error:", error);
     return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Upload failed" }, { status: 500 });

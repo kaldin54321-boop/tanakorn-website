@@ -49,7 +49,7 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ lo
       </header>
       {article.image_url && (
         <div style={{ marginTop: 24, borderRadius: 16, overflow: "hidden", border: "1px solid var(--border)" }}>
-          <img src={article.image_url} alt={article.title} style={{ width: "100%", height: "auto", maxHeight: 520, objectFit: "cover", display: "block" }} />
+          <img src={article.image_url} alt={article.title} style={{ width: "100%", height: "auto", display: "block" }} />
         </div>
       )}
       <article className="article-body">
