@@ -51,11 +51,6 @@ export default function AdminLayout({
             Files
           </Link>
 
-          <Link href="/admin/videos">
-            <span>▶</span>
-            Videos
-          </Link>
-
           <Link href="/admin/settings">
             <span>⚙</span>
             Settings

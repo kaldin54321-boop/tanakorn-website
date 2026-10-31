@@ -176,10 +176,21 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <div className="youtube-empty"><p>{dict.home.noVideosTitle}</p><span>{dict.home.noVideosDesc}</span></div>
         ) : (
           <div className="youtube-grid">
-            {youtubeVideos.map((video) => {
-              const id = video.youtube_id || (()=>{ try{ const u=new URL(video.youtube_url); if(u.hostname.includes("youtu.be")) return u.pathname.slice(1); return u.searchParams.get("v")||"";}catch{return ""}})();
-              return (<div key={video.id} className="youtube-card"><div className="youtube-embed"><iframe src={`https://www.youtube.com/embed/${id}`} title={video.title || "Winlator Frost Video"} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /></div>{video.title && <h3>{video.title}</h3>}</div>);
-            })}
+            {youtubeVideos.map((video) => (
+              <div key={video.id} className="youtube-card">
+                <div className="youtube-embed">
+                  <iframe src={`https://www.youtube.com/embed/${video.id}`} title={video.title} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                </div>
+                <h3>{video.title}</h3>
+              </div>
+            ))}
+          </div>
+        )}
+        {youtubeVideos.length > 0 && (
+          <div className="youtube-more">
+            <Link href={`/${loc}/videos`} className="button-secondary">
+              {dict.home.showMoreVideos}
+            </Link>
           </div>
         )}
       </section>

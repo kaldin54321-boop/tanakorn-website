@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import LanguageSelector from "./LanguageSelector";
 
 type Props = { locale?: string; dict?: ReturnType<typeof getDictionary> };
 
@@ -25,7 +26,7 @@ export default function Footer({ locale = "en", dict }: Props) {
 
           <div className="footer-social">
             <a
-              href="https://discord.gg/Q74CNHJnq2"
+              href="https://discord.com/invite/ZhRXKY5VSE"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Discord"
@@ -35,7 +36,7 @@ export default function Footer({ locale = "en", dict }: Props) {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.79 19.79 0 00-4.885-1.515.074.074 0 00-.079.037 13.6 13.6 0 00-.588 1.207 18.24 18.24 0 00-5.53 0 12.3 12.3 0 00-.594-1.207.07.07 0 00-.079-.037A19.79 19.79 0 003.681 4.37a.064.064 0 00-.028.02A20.26 20.26 0 00.529 13.91a.069.069 0 00.026.033 19.86 19.86 0 005.993 3.025.07.07 0 00.084-.027 13.8 13.8 0 001.18-1.913.07.07 0 00-.038-.094 12.7 12.7 0 01-1.81-.864.07.07 0 01-.007-.119l.136-.102a.07.07 0 01.07-.01c3.808 1.756 7.93 1.756 11.7 0a.07.07 0 01.071.01l.136.102a.07.07 0 01-.006.119 12.7 12.7 0 01-1.81.864.07.07 0 00-.039.094 13.5 13.5 0 001.183 1.913.07.07 0 00.084.027 19.86 19.86 0 005.994-3.025.07.07 0 00.026-.033A20.26 20.26 0 0020.345 4.39a.06.06 0 00-.028-.02zM8.58 15.33c-1.182 0-2.16-1.08-2.16-2.41s.955-2.41 2.16-2.41c1.21 0 2.185 1.09 2.16 2.41s-.955 2.41-2.16 2.41zm7.04 0c-1.183 0-2.16-1.08-2.16-2.41s.955-2.41 2.16-2.41c1.21 0 2.185 1.09 2.16 2.41s-.955 2.41-2.16 2.41z"/></svg>
             </a>
             <a
-              href="https://youtube.com/@techtanakornofficialth?si=HMZ9D01OJvqrR8rW"
+              href="https://www.youtube.com/@HMgamingstudioTH"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="YouTube"
@@ -66,6 +67,15 @@ export default function Footer({ locale = "en", dict }: Props) {
             <h4>{d.footer.resources}</h4>
             <Link href={`/${loc}/news`}>{d.footer.updates}</Link>
             <Link href={`/${loc}/downloads`}>{d.footer.releases}</Link>
+          </div>
+
+          <div className="footer-language">
+            <h4>{d.language.select}</h4>
+            <LanguageSelector
+              locale={loc}
+              variant="footer"
+              label={d.language.select}
+            />
           </div>
 
         </div>

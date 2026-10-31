@@ -414,34 +414,33 @@ export default async function Home() {
 
   {youtubeVideos.length === 0 ? (
     <div className="youtube-empty">
-      <p>No featured videos yet.</p>
-      <span>Selected YouTube videos will appear here. Manage in Admin → Videos.</span>
+      <p>No Winlator@Frost videos yet.</p>
+      <span>The latest videos from our YouTube channel will appear here automatically.</span>
     </div>
   ) : (
     <div className="youtube-grid">
-      {youtubeVideos.map((video) => {
-        const id = video.youtube_id || (() => {
-          try {
-            const u = new URL(video.youtube_url);
-            if (u.hostname.includes("youtu.be")) return u.pathname.slice(1);
-            return u.searchParams.get("v") || "";
-          } catch { return ""; }
-        })();
-        return (
-          <div key={video.id} className="youtube-card">
-            <div className="youtube-embed">
-              <iframe
-                src={`https://www.youtube.com/embed/${id}`}
-                title={video.title || "Winlator Frost Video"}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-            {video.title && <h3>{video.title}</h3>}
+      {youtubeVideos.map((video) => (
+        <div key={video.id} className="youtube-card">
+          <div className="youtube-embed">
+            <iframe
+              src={`https://www.youtube.com/embed/${video.id}`}
+              title={video.title}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           </div>
-        );
-      })}
+          <h3>{video.title}</h3>
+        </div>
+      ))}
+    </div>
+  )}
+
+  {youtubeVideos.length > 0 && (
+    <div className="youtube-more">
+      <Link href="/videos" className="button-secondary">
+        Show more videos →
+      </Link>
     </div>
   )}
 

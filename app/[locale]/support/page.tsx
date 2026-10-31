@@ -16,7 +16,7 @@ const DONATION_LINKS = [
   { href: "https://paypal.me/MUHAMMADINISMAIL", label: "PayPal", className: "paypal" },
 ] as const;
 
-const DISCORD_URL = "https://discord.gg/Q74CNHJnq2";
+const DISCORD_URL = "https://discord.com/invite/ZhRXKY5VSE";
 
 const TIERS = [
   "❄ Frost Supporter",
