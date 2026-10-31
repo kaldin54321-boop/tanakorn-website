@@ -90,6 +90,22 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
               <p className="donation-card-text">{dict.common.donationText}</p>
               <Link href={`/${loc}/support`} className="button-secondary">{dict.common.learnMoreDonation}</Link>
             </div>
+            <div className="hero-source">
+              <p className="donation-card-title">SOURCE CODE</p>
+              <div className="donation-card">
+                <p className="donation-card-text">{dict.home.sourceCodeDesc}</p>
+                <div className="source-code-actions">
+                  <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer" className="button-secondary repo-button">
+                    <GitHubLogo className="repo-button-icon" />
+                    View on GitHub
+                  </a>
+                  <a href={GITLAB_REPO_URL} target="_blank" rel="noopener noreferrer" className="button-secondary repo-button">
+                    <GitLabLogo className="repo-button-icon repo-button-icon--gitlab" />
+                    View on GitLab
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -237,26 +253,6 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <details className="faq-card"><summary>{dict.home.faqQ7}</summary><p>{dict.home.faqA7}</p></details>
           <details className="faq-card"><summary>{dict.home.faqQ8}</summary><p>{dict.home.faqA8}</p></details>
           <details className="faq-card"><summary>{dict.home.faqQ9}</summary><p>{dict.home.faqA9}</p></details>
-        </div>
-      </section>
-
-      <section className="open-source-section">
-        <div className="section-heading"><p>OPEN SOURCE</p><h2>Open Source</h2></div>
-        <div className="source-code-box">
-          <p className="donation-card-title">SOURCE CODE</p>
-          <div className="donation-card source-code-card">
-            <p className="donation-card-text">{dict.home.sourceCodeDesc}</p>
-            <div className="source-code-actions">
-              <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer" className="button-secondary repo-button">
-                <GitHubLogo className="repo-button-icon" />
-                View on GitHub
-              </a>
-              <a href={GITLAB_REPO_URL} target="_blank" rel="noopener noreferrer" className="button-secondary repo-button">
-                <GitLabLogo className="repo-button-icon repo-button-icon--gitlab" />
-                View on GitLab
-              </a>
-            </div>
-          </div>
         </div>
       </section>
 

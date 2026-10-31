@@ -123,6 +123,37 @@ export default async function Home() {
               <p className="donation-card-text">Winlator@Frost is free for everyone. If you would like to help cover hosting and development costs, you can make a voluntary contribution.</p>
               <Link href="/support" className="button-secondary">Learn more about Frost donation</Link>
             </div>
+            <div className="hero-source">
+              <p className="donation-card-title">SOURCE CODE</p>
+              <div className="donation-card">
+                <p className="donation-card-text">
+                  The source code of the Winlator@Frost project are now available!
+                  Please kindly help by contribute to us for help growing this project
+                  to have a more better features and provide a lot of useful features
+                  to all the users
+                </p>
+                <div className="source-code-actions">
+                  <a
+                    href={GITHUB_REPO_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="button-secondary repo-button"
+                  >
+                    <GitHubLogo className="repo-button-icon" />
+                    View on GitHub
+                  </a>
+                  <a
+                    href={GITLAB_REPO_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="button-secondary repo-button"
+                  >
+                    <GitLabLogo className="repo-button-icon repo-button-icon--gitlab" />
+                    View on GitLab
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -542,56 +573,6 @@ export default async function Home() {
   </div>
 
 </section>
-
- <section className="open-source-section">
-
-   <div className="section-heading">
-     <p>OPEN SOURCE</p>
-     <h2>Open Source</h2>
-   </div>
-
-   <div className="source-code-box">
-
-     <p className="donation-card-title">
-       SOURCE CODE
-     </p>
-
-     <div className="donation-card source-code-card">
-
-       <p className="donation-card-text">
-         The source code of the Winlator@Frost project are now available!
-         Please kindly help by contribute to us for help growing this project
-         to have a more better features and provide a lot of useful features
-         to all the users
-       </p>
-
-       <div className="source-code-actions">
-         <a
-           href={GITHUB_REPO_URL}
-           target="_blank"
-           rel="noopener noreferrer"
-           className="button-secondary repo-button"
-         >
-           <GitHubLogo className="repo-button-icon" />
-           View on GitHub
-         </a>
-
-         <a
-           href={GITLAB_REPO_URL}
-           target="_blank"
-           rel="noopener noreferrer"
-           className="button-secondary repo-button"
-         >
-           <GitLabLogo className="repo-button-icon repo-button-icon--gitlab" />
-           View on GitLab
-         </a>
-       </div>
-
-     </div>
-
-   </div>
-
- </section>
 
  <section className="cta-section">
 
