@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import ImageCropDialog from "./ImageCropDialog";
 
 type ParagraphBlock = {
   id: string;
@@ -10,6 +11,14 @@ type ParagraphBlock = {
   imageUrl: string | null;
   imageAlt?: string;
 };
+
+type CropRequest = {
+  file: File;
+  target: { kind: "cover" } | { kind: "paragraph"; blockId: string };
+};
+
+const ALLOWED_ARTICLE_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
+const MAX_ARTICLE_IMAGE_BYTES = 10 * 1024 * 1024;
 
 type Props = {
   mode: "create" | "edit";
@@ -52,6 +61,15 @@ function blocksToContentString(blocks: ParagraphBlock[]): string {
   return JSON.stringify(blocks);
 }
 
+function validateArticleImage(file: File): string {
+  if (!ALLOWED_ARTICLE_IMAGE_TYPES.includes(file.type)) {
+    return "Choose a JPEG, PNG, WebP, GIF, or AVIF image.";
+  }
+  if (file.size === 0) return "The selected image is empty.";
+  if (file.size > MAX_ARTICLE_IMAGE_BYTES) return "Image too large: max 10 MB.";
+  return "";
+}
+
 export default function NewsEditor({ mode, initialData, action }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState(initialData?.title ?? "");
@@ -63,10 +81,10 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
   const [coverPreview, setCoverPreview] = useState<string>(initialData?.image_url ?? "");
   const [coverUploading, setCoverUploading] = useState(false);
   const [uploadingBlocks, setUploadingBlocks] = useState<Set<string>>(() => new Set());
+  const [cropRequest, setCropRequest] = useState<CropRequest | null>(null);
   const [blocks, setBlocks] = useState<ParagraphBlock[]>(() => parseContentToBlocks(initialData?.content ?? ""));
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-generate slug from title if empty (create mode)
   const handleTitleChange = (v: string) => {
@@ -77,17 +95,7 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
     }
   };
 
-  const handleCoverFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setError("Cover must be an image (jpeg, png, webp, gif, avif).");
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setError("Cover image too large: max 10 MB.");
-      return;
-    }
+  const uploadCoverFile = async (file: File) => {
     setCoverUploading(true);
     setError("");
     try {
@@ -102,20 +110,23 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
       setError(err instanceof Error ? err.message : "Cover upload failed");
     } finally {
       setCoverUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  const handleParagraphImage = async (blockId: string, file: File | null) => {
+  const handleCoverFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setError("Paragraph image must be an image file.");
+    const validationError = validateArticleImage(file);
+    if (validationError) {
+      setError(validationError);
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setError("Image too large: max 10 MB.");
-      return;
-    }
+    setError("");
+    setCropRequest({ file, target: { kind: "cover" } });
+  };
+
+  const uploadParagraphImage = async (blockId: string, file: File) => {
     const previousImageUrl = blocks.find((block) => block.id === blockId)?.imageUrl ?? null;
     const localPreview = URL.createObjectURL(file);
     setError("");
@@ -141,6 +152,28 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
     }
   };
 
+  const handleParagraphFile = (blockId: string, file: File | null) => {
+    if (!file) return;
+    const validationError = validateArticleImage(file);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError("");
+    setCropRequest({ file, target: { kind: "paragraph", blockId } });
+  };
+
+  const handleCropConfirm = (file: File) => {
+    const request = cropRequest;
+    setCropRequest(null);
+    if (!request) return;
+    if (request.target.kind === "cover") {
+      void uploadCoverFile(file);
+    } else {
+      void uploadParagraphImage(request.target.blockId, file);
+    }
+  };
+
   const addParagraph = () => {
     setBlocks((prev) => [...prev, { id: Math.random().toString(36).slice(2), text: "", imageUrl: null }]);
   };
@@ -163,6 +196,10 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (cropRequest) {
+      setError("Finish or cancel the image crop before saving.");
+      return;
+    }
     if (coverUploading || uploadingBlocks.size > 0) {
       setError("Please wait for all image uploads to finish before saving.");
       return;
@@ -199,7 +236,8 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="admin-form">
+    <>
+      <form onSubmit={handleSubmit} className="admin-form">
       <section className="admin-form-section">
         <h2>Article Information</h2>
         <div className="form-grid">
@@ -243,7 +281,7 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
       <section className="admin-form-section">
         <h2>Cover Image (optional)</h2>
         <p className="admin-page-description" style={{ marginBottom: 12 }}>
-          Optional cover image shown on news listing and homepage. Upload from device storage or paste URL below. Any aspect ratio is supported, max 10 MB.
+          Optional cover image shown on news listing and homepage. Upload from device storage, adjust the crop, or paste a URL below. Any aspect ratio is supported, max 10 MB.
         </p>
         {coverPreview && (
           <div style={{ marginBottom: 12, border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", maxWidth: 480 }}>
@@ -253,7 +291,7 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
           <label className="button-secondary" style={{ cursor: "pointer", margin: 0 }}>
             {coverUploading ? "Uploading..." : coverPreview ? "Change cover image" : "Upload cover image"}
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" onChange={handleCoverFile} style={{ display: "none" }} disabled={coverUploading} />
+            <input type="file" accept={ALLOWED_ARTICLE_IMAGE_TYPES.join(",")} onChange={handleCoverFile} style={{ display: "none" }} disabled={coverUploading || !!cropRequest} />
           </label>
           {coverPreview && (
             <button type="button" className="button-secondary" onClick={() => { setCoverUrl(""); setCoverPreview(""); }} disabled={coverUploading}>
@@ -274,7 +312,7 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
           <button type="button" className="button-secondary" onClick={addParagraph} style={{ padding: "8px 12px", fontSize: 12 }}>+ Add paragraph</button>
         </div>
         <p className="admin-page-description" style={{ marginBottom: 16 }}>
-          Write each paragraph separately. For any paragraph that needs a picture, click “Attach image” below that paragraph and select from device storage. Images will appear right after that paragraph on the public article page.
+          Write each paragraph separately. For any paragraph that needs a picture, click “Attach image” below that paragraph, then crop the image before uploading. Images will appear right after that paragraph on the public article page.
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -307,12 +345,12 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
                     {uploadingBlocks.has(block.id) ? "Uploading..." : block.imageUrl ? "Change image" : "Attach image"}
                     <input
                       type="file"
-                      accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                      accept={ALLOWED_ARTICLE_IMAGE_TYPES.join(",")}
                       style={{ display: "none" }}
-                      disabled={uploadingBlocks.has(block.id)}
+                      disabled={uploadingBlocks.has(block.id) || !!cropRequest}
                       onChange={(e) => {
                         const f = e.target.files?.[0] || null;
-                        if (f) handleParagraphImage(block.id, f);
+                        if (f) handleParagraphFile(block.id, f);
                         e.target.value = "";
                       }}
                     />
@@ -334,10 +372,21 @@ export default function NewsEditor({ mode, initialData, action }: Props) {
 
       <div className="admin-form-actions">
         <Link href="/admin/news" className="button-secondary">CANCEL</Link>
-        <button type="submit" className="button-primary" disabled={submitting || coverUploading || uploadingBlocks.size > 0}>
-          {submitting ? "Saving..." : coverUploading || uploadingBlocks.size > 0 ? "WAITING FOR UPLOADS..." : mode === "create" ? "CREATE ARTICLE" : "SAVE CHANGES"}
+        <button type="submit" className="button-primary" disabled={submitting || coverUploading || uploadingBlocks.size > 0 || !!cropRequest}>
+          {submitting ? "Saving..." : cropRequest ? "FINISH IMAGE CROP" : coverUploading || uploadingBlocks.size > 0 ? "WAITING FOR UPLOADS..." : mode === "create" ? "CREATE ARTICLE" : "SAVE CHANGES"}
         </button>
       </div>
-    </form>
+      </form>
+
+      {cropRequest ? (
+        <ImageCropDialog
+          key={`${cropRequest.target.kind}-${cropRequest.file.name}-${cropRequest.file.lastModified}`}
+          file={cropRequest.file}
+          title={cropRequest.target.kind === "cover" ? "Crop cover image" : "Crop paragraph image"}
+          onCancel={() => setCropRequest(null)}
+          onConfirm={handleCropConfirm}
+        />
+      ) : null}
+    </>
   );
 }

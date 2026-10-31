@@ -2627,6 +2627,311 @@ body {
   gap: 12px;
 }
 
+/* --------------------------------------------
+   Article image cropper
+   -------------------------------------------- */
+
+.image-crop-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(3, 8, 14, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.image-crop-dialog {
+  width: min(900px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid rgba(141, 220, 255, 0.2);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+  outline: none;
+}
+
+.image-crop-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.image-crop-header p {
+  margin: 0 0 4px;
+  color: var(--frost);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.image-crop-header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.image-crop-close {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.image-crop-close:disabled,
+.image-crop-ratio:disabled,
+.image-crop-reset:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.image-crop-ratios {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.image-crop-ratio,
+.image-crop-reset {
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.image-crop-ratio.is-active {
+  border-color: rgba(141, 220, 255, 0.65);
+  background: rgba(141, 220, 255, 0.12);
+  color: var(--frost);
+}
+
+.image-crop-reset {
+  margin-left: auto;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  text-decoration: underline;
+}
+
+.image-crop-stage-shell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  width: 100%;
+  padding: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at center, rgba(141, 220, 255, 0.08), transparent 68%),
+    #05080d;
+}
+
+.image-crop-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.image-crop-stage {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  line-height: 0;
+  touch-action: none;
+  user-select: none;
+}
+
+.image-crop-stage img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: min(52vh, 520px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.image-crop-selection {
+  position: absolute;
+  z-index: 2;
+  border: 2px solid var(--frost);
+  box-shadow: 0 0 0 9999px rgba(1, 5, 10, 0.7);
+  cursor: move;
+  touch-action: none;
+  transition: none;
+}
+
+.image-crop-selection::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(
+      to right,
+      transparent calc(33.333% - 0.5px),
+      rgba(255, 255, 255, 0.24) calc(33.333% - 0.5px),
+      rgba(255, 255, 255, 0.24) calc(33.333% + 0.5px),
+      transparent calc(33.333% + 0.5px),
+      transparent calc(66.666% - 0.5px),
+      rgba(255, 255, 255, 0.24) calc(66.666% - 0.5px),
+      rgba(255, 255, 255, 0.24) calc(66.666% + 0.5px),
+      transparent calc(66.666% + 0.5px)
+    ),
+    linear-gradient(
+      to bottom,
+      transparent calc(33.333% - 0.5px),
+      rgba(255, 255, 255, 0.24) calc(33.333% - 0.5px),
+      rgba(255, 255, 255, 0.24) calc(33.333% + 0.5px),
+      transparent calc(33.333% + 0.5px),
+      transparent calc(66.666% - 0.5px),
+      rgba(255, 255, 255, 0.24) calc(66.666% - 0.5px),
+      rgba(255, 255, 255, 0.24) calc(66.666% + 0.5px),
+      transparent calc(66.666% + 0.5px)
+    );
+}
+
+.image-crop-handle {
+  position: absolute;
+  z-index: 3;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--frost);
+  border-radius: 4px;
+  background: #071019;
+  touch-action: none;
+}
+
+.image-crop-handle-nw {
+  left: -7px;
+  top: -7px;
+  cursor: nwse-resize;
+}
+
+.image-crop-handle-ne {
+  right: -7px;
+  top: -7px;
+  cursor: nesw-resize;
+}
+
+.image-crop-handle-sw {
+  left: -7px;
+  bottom: -7px;
+  cursor: nesw-resize;
+}
+
+.image-crop-handle-se {
+  right: -7px;
+  bottom: -7px;
+  cursor: nwse-resize;
+}
+
+.image-crop-help {
+  margin: 14px 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.image-crop-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.image-crop-error {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.image-crop-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.image-crop-actions > div {
+  display: flex;
+  gap: 10px;
+}
+
+.image-crop-actions .button-secondary,
+.image-crop-actions .button-primary {
+  min-height: 38px;
+}
+
+@media (max-width: 640px) {
+  .image-crop-backdrop {
+    padding: 10px;
+  }
+
+  .image-crop-dialog {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .image-crop-header h2 {
+    font-size: 18px;
+  }
+
+  .image-crop-ratios {
+    gap: 6px;
+  }
+
+  .image-crop-ratio,
+  .image-crop-reset {
+    padding: 6px 10px;
+  }
+
+  .image-crop-stage-shell {
+    min-height: 180px;
+    padding: 8px;
+  }
+
+  .image-crop-stage img {
+    max-height: 44vh;
+  }
+
+  .image-crop-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .image-crop-actions > div {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .release-actions {
   display: flex;
   justify-content: flex-end;
