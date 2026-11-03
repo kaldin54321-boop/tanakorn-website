@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import {
   getPublicNews,
+  getPublicNewsArticle,
 } from "@/lib/news";
+import {
+  createPageMetadata,
+  truncateDescription,
+} from "@/lib/seo";
 
 import { parseNewsContent } from "@/lib/news-helpers";
 import ShareButtons from "@/app/components/ShareButtons";
@@ -27,6 +33,29 @@ type NewsPageProps = {
     slug: string;
   }>;
 };
+
+export async function generateMetadata({
+  params,
+}: NewsPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const article = await getPublicNewsArticle(slug);
+
+  if (!article) {
+    return {
+      title: "Article Not Found",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  return createPageMetadata({
+    title: article.title,
+    description: truncateDescription(
+      article.excerpt,
+      `${article.title} - Winlator@Frost news and updates.`
+    ),
+    path: `/news/${article.slug}`,
+  });
+}
 
 
 function formatNewsDate(

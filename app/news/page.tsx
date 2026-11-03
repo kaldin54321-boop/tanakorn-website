@@ -1,11 +1,20 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import {
   getPublicNews,
 } from "@/lib/news";
+import { createPageMetadata } from "@/lib/seo";
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "News",
+  description:
+    "Latest Winlator@Frost news, announcements, release updates, and development information.",
+  path: "/news",
+});
 
 
 function formatNewsDate(

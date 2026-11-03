@@ -1,12 +1,28 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getPublicReleases } from "@/lib/releases";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { locales } from "@/lib/i18n/config";
+import { createPageMetadata } from "@/lib/seo";
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
 export async function generateStaticParams(){ return locales.map((locale)=>({ locale })); }
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const dict = getDictionary(locale);
+  return createPageMetadata({
+    title: dict.downloads.title,
+    description: dict.downloads.subtitle,
+    path: `/${locale}/downloads`,
+  });
+}
 
 function formatFileSize(bytes: number | null, dict: any) {
   if (bytes === null || !Number.isFinite(bytes)) return dict.common.unknownSize;

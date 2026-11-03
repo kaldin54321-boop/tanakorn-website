@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
-import { SITE_URL } from "@/lib/seo";
+import { HOME_TITLE, SITE_NAME, SITE_URL } from "@/lib/seo";
 import ViewTracker from "./components/ViewTracker";
 import DonationDangerModal from "./components/DonationDangerModal";
 import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  applicationName: "Winlator@Frost",
+  applicationName: SITE_NAME,
+  title: {
+    default: HOME_TITLE,
+    template: `%s | ${SITE_NAME}`,
+  },
   robots: {
     index: true,
     follow: true,

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { HOME_DESCRIPTION, HOME_TITLE } from "@/lib/seo";
 import GameStoresCarousel from "@/app/components/GameStoresCarousel";
+import WebsiteStructuredData from "@/app/components/WebsiteStructuredData";
 import { GitHubLogo, GitLabLogo } from "@/app/components/RepoLogos";
 import { GITHUB_REPO_URL, GITLAB_REPO_URL } from "@/lib/repos";
 
@@ -21,7 +22,7 @@ export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: HOME_TITLE,
+  title: { absolute: HOME_TITLE },
   description: HOME_DESCRIPTION,
   alternates: {
     canonical: "/",
@@ -68,6 +69,7 @@ export default async function Home() {
 
   return (
     <main>
+      <WebsiteStructuredData />
 
       <section className="hero">
 

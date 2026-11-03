@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import GameStoresCarousel from "@/app/components/GameStoresCarousel";
+import WebsiteStructuredData from "@/app/components/WebsiteStructuredData";
 import { GitHubLogo, GitLabLogo } from "@/app/components/RepoLogos";
 import { GITHUB_REPO_URL, GITLAB_REPO_URL } from "@/lib/repos";
 import { getPublicReleases } from "@/lib/releases";
@@ -30,7 +31,7 @@ export async function generateMetadata({
   };
 
   return {
-    title: HOME_TITLE,
+    title: { absolute: HOME_TITLE },
     description: HOME_DESCRIPTION,
     alternates: {
       canonical,
@@ -70,6 +71,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
 
   return (
     <main>
+      <WebsiteStructuredData />
       <section className="hero">
         <div className="hero-glow" />
         <div className="hero-content">

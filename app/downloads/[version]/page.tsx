@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import {
   getPublicReleases,
 } from "@/lib/releases";
+import {
+  createPageMetadata,
+  truncateDescription,
+} from "@/lib/seo";
 
 import DownloadButton from "./download-button";
 import ShareButtons from "@/app/components/ShareButtons";
@@ -26,6 +31,32 @@ type PageProps = {
     version: string;
   }>;
 };
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { version: rawVersion } = await params;
+  const version = decodeURIComponent(rawVersion);
+  const releases = await getPublicReleases();
+  const release = releases.find((item) => item.version === version);
+
+  if (!release) {
+    return {
+      title: "Release Not Found",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  return createPageMetadata({
+    title: release.name,
+    absoluteTitle: true,
+    description: truncateDescription(
+      release.description,
+      `Download ${release.name} version ${release.version} for Android from the official Winlator@Frost website.`
+    ),
+    path: `/downloads/${encodeURIComponent(release.version)}`,
+  });
+}
 
 
 function formatFileSize(

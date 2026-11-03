@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { getPublicNews } from "@/lib/news";
+import { getPublicNews, getPublicNewsArticle } from "@/lib/news";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { locales } from "@/lib/i18n/config";
+import { createPageMetadata, truncateDescription } from "@/lib/seo";
 import { parseNewsContent } from "@/lib/news-helpers";
 import ShareButtons from "@/app/components/ShareButtons";
 
@@ -14,6 +16,32 @@ export async function generateStaticParams() {
 }
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; slug: string }>;
+}): Promise<Metadata> {
+  const { locale, slug } = await params;
+  const dict = getDictionary(locale);
+  const article = await getPublicNewsArticle(slug);
+
+  if (!article) {
+    return {
+      title: dict.news.articleNotFound,
+      robots: { index: false, follow: false },
+    };
+  }
+
+  return createPageMetadata({
+    title: article.title,
+    description: truncateDescription(
+      article.excerpt,
+      `${article.title} - Winlator@Frost news and updates.`
+    ),
+    path: `/${locale}/news/${article.slug}`,
+  });
+}
 
 function formatNewsDate(date: string, locale: string) {
   const parsedDate = new Date(date);

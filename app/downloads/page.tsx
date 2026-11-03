@@ -1,11 +1,20 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import {
   getPublicReleases,
 } from "@/lib/releases";
+import { createPageMetadata } from "@/lib/seo";
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Downloads",
+  description:
+    "Download official Winlator@Frost releases for Android, including the latest version and previous releases.",
+  path: "/downloads",
+});
 
 
 function formatFileSize(

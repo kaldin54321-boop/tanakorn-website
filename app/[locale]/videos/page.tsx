@@ -21,7 +21,7 @@ export async function generateMetadata({
   const canonical = `/${locale}/videos`;
 
   return {
-    title: `${dict.home.seeFrostInAction} – Winlator@Frost`,
+    title: { absolute: `${dict.home.seeFrostInAction} – Winlator@Frost` },
     description: dict.home.videosPageDesc,
     alternates: {
       canonical,

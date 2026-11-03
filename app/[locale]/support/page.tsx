@@ -1,15 +1,32 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import ShareButtons from "@/app/components/ShareButtons";
 import { GitHubLogo, GitLabLogo } from "@/app/components/RepoLogos";
 import { GITHUB_REPO_URL, GITLAB_REPO_URL } from "@/lib/repos";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { locales } from "@/lib/i18n/config";
+import { createPageMetadata } from "@/lib/seo";
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const dict = getDictionary(locale);
+  return createPageMetadata({
+    title: dict.support.title,
+    description: dict.support.heroDesc,
+    path: `/${locale}/support`,
+    absoluteTitle: true,
+  });
 }
 
 const DONATION_LINKS = [
