@@ -2,9 +2,11 @@ import { unstable_cache } from "next/cache";
 
 export const YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@HMgamingstudioTH";
 
-const YOUTUBE_CHANNEL_VIDEOS_URL = `${YOUTUBE_CHANNEL_URL}/videos`;
-const YOUTUBE_USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
+// Public web client values used by youtube.com itself for the browse API.
+const YOUTUBE_CHANNEL_ID = "UCIQa0dliPS9mcBWHjMINifQ";
+const YOUTUBE_BROWSE_API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
+const YOUTUBE_CLIENT_VERSION = "2.20261029.11.00";
+const YOUTUBE_VIDEOS_TAB_PARAMS = "EgZ2aWRlb3PyBgQKAjoA";
 
 // The channel_id feed returns 404 for this brand account, but the uploads
 // playlist feed (UU + channel id without the UC prefix) serves all uploads.
@@ -100,40 +102,6 @@ export async function getPublicYoutubeVideos(): Promise<YoutubeVideo[]> {
     console.error("Failed to load YouTube videos:", error);
     return [];
   }
-}
-
-function extractJsonObject(html: string, marker: string): unknown {
-  const markerIndex = html.indexOf(marker);
-  if (markerIndex === -1) return null;
-
-  const start = html.indexOf("{", markerIndex + marker.length);
-  if (start === -1) return null;
-
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-
-  for (let index = start; index < html.length; index++) {
-    const char = html[index];
-
-    if (inString) {
-      if (escaped) escaped = false;
-      else if (char === "\\") escaped = true;
-      else if (char === '"') inString = false;
-      continue;
-    }
-
-    if (char === '"') inString = true;
-    else if (char === "{") depth++;
-    else if (char === "}") {
-      depth--;
-      if (depth === 0) {
-        return JSON.parse(html.slice(start, index + 1));
-      }
-    }
-  }
-
-  return null;
 }
 
 function findFirst(value: unknown, key: string): unknown {
@@ -238,74 +206,45 @@ function getContinuationItems(payload: unknown): unknown[] | null {
   return null;
 }
 
-async function fetchChannelVideosPage(): Promise<string> {
-  const response = await fetch(YOUTUBE_CHANNEL_VIDEOS_URL, {
-    cache: "no-store",
-    headers: {
-      "User-Agent": YOUTUBE_USER_AGENT,
-      "Accept-Language": "en-US,en;q=0.9",
-    },
-    signal: AbortSignal.timeout(20000),
-  });
-
-  if (!response.ok) {
-    throw new Error(`YouTube channel page returned ${response.status}`);
-  }
-
-  return response.text();
-}
-
-async function fetchContinuation(
-  token: string,
-  apiKey: string,
-  clientVersion: string
+async function fetchBrowse(
+  payload: Record<string, unknown>
 ): Promise<unknown> {
   const response = await fetch(
-    `https://www.youtube.com/youtubei/v1/browse?key=${apiKey}&prettyPrint=false`,
+    `https://www.youtube.com/youtubei/v1/browse?key=${YOUTUBE_BROWSE_API_KEY}&prettyPrint=false`,
     {
       method: "POST",
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",
-        "User-Agent": YOUTUBE_USER_AGENT,
-        "X-YouTube-Client-Name": "1",
-        "X-YouTube-Client-Version": clientVersion,
-        Origin: "https://www.youtube.com",
-        Referer: YOUTUBE_CHANNEL_VIDEOS_URL,
+        Accept: "application/json",
       },
       body: JSON.stringify({
         context: {
           client: {
             clientName: "WEB",
-            clientVersion,
+            clientVersion: YOUTUBE_CLIENT_VERSION,
             hl: "en",
             gl: "US",
           },
         },
-        continuation: token,
+        ...payload,
       }),
       signal: AbortSignal.timeout(20000),
     }
   );
 
   if (!response.ok) {
-    throw new Error(`YouTube continuation returned ${response.status}`);
+    throw new Error(`YouTube browse API returned ${response.status}`);
   }
 
   return response.json();
 }
 
 async function scrapeAllFrostVideos(): Promise<YoutubeVideo[]> {
-  const html = await fetchChannelVideosPage();
-  const initialData = extractJsonObject(html, "var ytInitialData = ");
-  const apiKey = html.match(/"INNERTUBE_API_KEY":"([^"]+)"/)?.[1];
-  const clientVersion = html.match(
-    /"INNERTUBE_CLIENT_VERSION":"([^"]+)"/
-  )?.[1];
-
-  if (!initialData || !apiKey || !clientVersion) {
-    throw new Error("Unable to read the YouTube channel listing");
-  }
+  const initialData = await fetchBrowse({
+    browseId: YOUTUBE_CHANNEL_ID,
+    params: YOUTUBE_VIDEOS_TAB_PARAMS,
+  });
 
   const grid = findFirst(initialData, "richGridRenderer");
   if (!isRecord(grid) || !Array.isArray(grid.contents)) {
@@ -323,11 +262,7 @@ async function scrapeAllFrostVideos(): Promise<YoutubeVideo[]> {
     page++;
 
     try {
-      const payload = await fetchContinuation(
-        nextToken,
-        apiKey,
-        clientVersion
-      );
+      const payload = await fetchBrowse({ continuation: nextToken });
       const items = getContinuationItems(payload);
       if (!items) break;
 
@@ -346,8 +281,7 @@ async function scrapeAllFrostVideos(): Promise<YoutubeVideo[]> {
   }
 
   const seen = new Set<string>();
-
-  return videos
+  const frostVideos = videos
     .filter((video) => {
       if (seen.has(video.id)) return false;
       seen.add(video.id);
@@ -360,11 +294,21 @@ async function scrapeAllFrostVideos(): Promise<YoutubeVideo[]> {
       thumbnail_url: `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`,
       published_at: "",
     }));
+
+  if (frostVideos.length === 0) {
+    console.warn("YouTube listing returned no Winlator@Frost videos");
+  } else {
+    console.log(
+      `YouTube listing loaded ${frostVideos.length} Winlator@Frost videos`
+    );
+  }
+
+  return frostVideos;
 }
 
 const getCachedAllFrostVideos = unstable_cache(
   scrapeAllFrostVideos,
-  ["youtube-all-frost-videos"],
+  ["youtube-all-frost-videos-v2"],
   { revalidate: 3600 }
 );
 
