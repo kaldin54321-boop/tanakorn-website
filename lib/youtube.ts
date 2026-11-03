@@ -3,10 +3,8 @@ import { unstable_cache } from "next/cache";
 export const YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@HMgamingstudioTH";
 
 // Public web client values used by youtube.com itself for the browse API.
-const YOUTUBE_CHANNEL_ID = "UCIQa0dliPS9mcBWHjMINifQ";
 const YOUTUBE_BROWSE_API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
 const YOUTUBE_CLIENT_VERSION = "2.20261029.11.00";
-const YOUTUBE_VIDEOS_TAB_PARAMS = "EgZ2aWRlb3PyBgQKAjoA";
 
 // The channel_id feed returns 404 for this brand account, but the uploads
 // playlist feed (UU + channel id without the UC prefix) serves all uploads.
@@ -104,26 +102,6 @@ export async function getPublicYoutubeVideos(): Promise<YoutubeVideo[]> {
   }
 }
 
-function findFirst(value: unknown, key: string): unknown {
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const found = findFirst(item, key);
-      if (found !== null && found !== undefined) return found;
-    }
-    return null;
-  }
-
-  if (!isRecord(value)) return null;
-  if (key in value) return value[key];
-
-  for (const child of Object.values(value)) {
-    const found = findFirst(child, key);
-    if (found !== null && found !== undefined) return found;
-  }
-
-  return null;
-}
-
 function collectListingItems(
   node: unknown,
   videos: RawYoutubeVideo[],
@@ -185,25 +163,23 @@ function collectListingItems(
     if (typeof token === "string") tokens.push(token);
   }
 
+  const continuationViewModel = node.continuationItemViewModel;
+  if (isRecord(continuationViewModel)) {
+    const command = continuationViewModel.continuationCommand;
+    const innertubeCommand = isRecord(command)
+      ? command.innertubeCommand
+      : null;
+    const nestedCommand = isRecord(innertubeCommand)
+      ? innertubeCommand.continuationCommand
+      : null;
+    const token = isRecord(nestedCommand) ? nestedCommand.token : null;
+
+    if (typeof token === "string") tokens.push(token);
+  }
+
   for (const child of Object.values(node)) {
     collectListingItems(child, videos, tokens);
   }
-}
-
-function getContinuationItems(payload: unknown): unknown[] | null {
-  if (!isRecord(payload) || !Array.isArray(payload.onResponseReceivedActions)) {
-    return null;
-  }
-
-  for (const action of payload.onResponseReceivedActions) {
-    if (!isRecord(action)) continue;
-    const continuationAction = action.appendContinuationItemsAction;
-    if (!isRecord(continuationAction)) continue;
-    const items = continuationAction.continuationItems;
-    if (Array.isArray(items)) return items;
-  }
-
-  return null;
 }
 
 async function fetchBrowse(
@@ -241,19 +217,16 @@ async function fetchBrowse(
 }
 
 async function scrapeAllFrostVideos(): Promise<YoutubeVideo[]> {
-  const initialData = await fetchBrowse({
-    browseId: YOUTUBE_CHANNEL_ID,
-    params: YOUTUBE_VIDEOS_TAB_PARAMS,
-  });
-
-  const grid = findFirst(initialData, "richGridRenderer");
-  if (!isRecord(grid) || !Array.isArray(grid.contents)) {
-    throw new Error("YouTube channel listing is empty");
-  }
-
   const videos: RawYoutubeVideo[] = [];
   const tokens: string[] = [];
-  collectListingItems(grid.contents, videos, tokens);
+
+  const initialData = await fetchBrowse({
+    browseId: `VL${YOUTUBE_UPLOADS_PLAYLIST_ID}`,
+  });
+  collectListingItems(initialData, videos, tokens);
+  console.log(
+    `YouTube playlist initial page: ${videos.length} videos, ${tokens.length} tokens`
+  );
 
   let nextToken = tokens[0];
   let page = 0;
@@ -263,12 +236,13 @@ async function scrapeAllFrostVideos(): Promise<YoutubeVideo[]> {
 
     try {
       const payload = await fetchBrowse({ continuation: nextToken });
-      const items = getContinuationItems(payload);
-      if (!items) break;
-
       const pageVideos: RawYoutubeVideo[] = [];
       const pageTokens: string[] = [];
-      collectListingItems(items, pageVideos, pageTokens);
+      collectListingItems(payload, pageVideos, pageTokens);
+
+      console.log(
+        `YouTube playlist page ${page}: ${pageVideos.length} videos, ${pageTokens.length} tokens`
+      );
 
       if (pageVideos.length === 0) break;
 
@@ -295,20 +269,16 @@ async function scrapeAllFrostVideos(): Promise<YoutubeVideo[]> {
       published_at: "",
     }));
 
-  if (frostVideos.length === 0) {
-    console.warn("YouTube listing returned no Winlator@Frost videos");
-  } else {
-    console.log(
-      `YouTube listing loaded ${frostVideos.length} Winlator@Frost videos`
-    );
-  }
+  console.log(
+    `YouTube playlist loaded ${videos.length} uploads, ${frostVideos.length} Winlator@Frost videos`
+  );
 
   return frostVideos;
 }
 
 const getCachedAllFrostVideos = unstable_cache(
   scrapeAllFrostVideos,
-  ["youtube-all-frost-videos-v2"],
+  ["youtube-all-frost-videos-v3"],
   { revalidate: 3600 }
 );
 
